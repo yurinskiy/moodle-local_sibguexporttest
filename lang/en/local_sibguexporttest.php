@@ -25,3 +25,14 @@ $string['navigation_main'] = 'Создание билета ВИ';
 $string['navigation_view'] = 'Скачать билеты ВИ';
 $string['navigation_settings'] = 'Настройка билета ВИ';
 $string['navigation_generator'] = 'Генератор билетов';
+
+$string['settingspage'] = 'Настройки страницы';
+$string['headerpage'] = 'Верхний колонтитул';
+$string['footerpage'] = 'Верхний колонтитул';
+$string['headerbodypage'] = 'Титульная страница ДО номера варианта';
+$string['footerbodypage'] = 'Титульная страница ПОСЛЕ номера варианта';
+
+$string['settingstest'] = 'Настройки тестов';
+$string['test_id'] = 'Выбранный тест';
+$string['test_order'] = 'Порядок теста';
+$string['test_delete'] = 'Удалить тест';

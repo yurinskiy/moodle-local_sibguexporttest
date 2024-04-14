@@ -50,13 +50,14 @@ switch ($action) {
     case 'settings':
         $title = get_string('navigation_settings', 'local_sibguexporttest');
         $render = $PAGE->get_renderer('local_sibguexporttest', 'settings');
+        $page = $render->view();
         break;
     default:
         $title = get_string('navigation_view', 'local_sibguexporttest');
         $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
+        $page = $render->view();
         break;
 }
-
 
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
@@ -64,6 +65,6 @@ $PAGE->set_heading($title);
 echo $OUTPUT->header();
 echo $OUTPUT->heading($title);
 
-echo $render->view();
+echo $page;
 
 echo $OUTPUT->footer();

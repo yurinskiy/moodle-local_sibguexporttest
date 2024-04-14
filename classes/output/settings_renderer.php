@@ -23,6 +23,7 @@ namespace local_sibguexporttest\output;
 
 defined('MOODLE_INTERNAL') || die();
 
+use local_sibguexporttest\settings;
 use plugin_renderer_base;
 
 /**
@@ -39,10 +40,46 @@ class settings_renderer extends plugin_renderer_base {
      */
     public function view(): string
     {
+        global $PAGE, $COURSE;
 
-        $mform = new \local_sibguexporttest\form\course_settings_form();
+        $settings = settings::get_by_course($COURSE->id);
+        $context = $PAGE->context;
+        $data = $settings->to_form();
 
-        return $this->moodleform($mform);
+        $output = '';
+
+        $mform = new \local_sibguexporttest\form\course_settings_form($PAGE->url->out_as_local_url(false), ['context' => $context, 'id' => $data->id, 'repeatno' => $data->test_repeats]);
+
+        $data = file_prepare_standard_editor($data, 'headerpage', $mform->get_editor_options('headerpage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+        $data = file_prepare_standard_editor($data, 'footerpage', $mform->get_editor_options('footerpage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+        $data = file_prepare_standard_editor($data, 'headerbodypage', $mform->get_editor_options('headerbodypage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+        $data = file_prepare_standard_editor($data, 'footerbodypage', $mform->get_editor_options('footerbodypage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+
+        $mform->set_data($data);
+
+        if ($mform->is_cancelled()) {
+
+        } else if ($data = $mform->get_data()) {
+            if (!$data->id) {
+                $settings->set('content', '');
+                $settings->save();
+            }
+
+            $data = file_postupdate_standard_editor($data, 'headerpage', $mform->get_editor_options('headerpage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+            $data = file_postupdate_standard_editor($data, 'footerpage', $mform->get_editor_options('footerpage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+            $data = file_postupdate_standard_editor($data, 'headerbodypage', $mform->get_editor_options('headerbodypage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+            $data = file_postupdate_standard_editor($data, 'footerbodypage', $mform->get_editor_options('footerbodypage'), $context, 'local_sibguexporttest', 'settings', $data->id);
+
+            $settings->from_form($data);
+
+            $settings->save();
+
+            redirect($PAGE->url);
+        } else {
+            $output .= $this->moodleform($mform);
+        }
+
+        return $output;
     }
 
     /**
@@ -61,4 +98,24 @@ class settings_renderer extends plugin_renderer_base {
 
         return $o;
     }
+}
+
+function dd(...$vars)
+{
+    if (!\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true) && !headers_sent()) {
+        header('HTTP/1.1 500 Internal Server Error');
+    }
+
+    echo '<pre>';
+
+    if (array_key_exists(0, $vars) && 1 === count($vars)) {
+        echo print_r($vars[0], 1);
+    } else {
+        foreach ($vars as $k => $v) {
+            echo print_r($v, 1);
+        }
+    }
+    echo '</pre>';
+
+    exit(1);
 }

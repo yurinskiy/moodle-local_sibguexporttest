@@ -43,7 +43,6 @@ if (!function_exists('dd')) {
 }
 
 function local_sibguexporttest_extend_settings_navigation(settings_navigation $settingsnav, context $context) {
-
     if ($context->contextlevel !== CONTEXT_COURSE) {
         return;
     }
@@ -56,6 +55,9 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
     $id = $context->instanceid;
 
     $coursereportsnode = $settingsnav->find('coursereports', navigation_node::TYPE_CONTAINER);
+    if (!$coursereportsnode) {
+        return;
+    }
 
     // Создание билета ВИ
     $urltext = get_string('navigation_main', 'local_sibguexporttest');
