@@ -3,6 +3,7 @@
 namespace local_sibguexporttest\form;
 
 global $CFG;
+
 require_once($CFG->libdir . '/formslib.php');
 
 class course_settings_form extends \moodleform {
@@ -29,8 +30,10 @@ class course_settings_form extends \moodleform {
         // Настройки тестов
         $mform->addElement('header', 'settingstest', get_string('settingstest', 'local_sibguexporttest'));
 
+        $quizs = $this->getQuizzes();
+
         $repeatarray = [
-            $mform->createElement('text', 'test_id', get_string('test_id', 'local_sibguexporttest')),
+            $mform->createElement('select', 'test_id', get_string('test_id', 'local_sibguexporttest'), $quizs),
             $mform->createElement('text', 'test_order', get_string('test_order', 'local_sibguexporttest')),
             $mform->createElement('submit', 'test_delete', get_string('test_delete', 'local_sibguexporttest')),
         ];
@@ -61,6 +64,28 @@ class course_settings_form extends \moodleform {
         $this->add_action_buttons();
     }
 
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+
+        $quizzes = $this->getQuizzes();
+        $used_test_id = [];
+        foreach ($data['test_id'] as $key => $test_id) {
+            if (!\array_key_exists($test_id, $quizzes)) {
+                $errors['test_id['.$key.']'] = get_string('test_id-error_not_found', 'local_sibguexporttest');
+                continue;
+            }
+
+            if (\in_array($test_id, $used_test_id)) {
+                $errors['test_id['.$key.']'] = get_string('test_id-error_exists', 'local_sibguexporttest', $quizzes[$test_id]);
+                continue;
+            }
+
+            $used_test_id[] = $test_id;
+        }
+
+        return $errors;
+    }
+
     /**
      * Returns the description editor options.
      * @return array
@@ -78,5 +103,17 @@ class course_settings_form extends \moodleform {
             'subdirs'   => file_area_contains_subdirs($context, 'local_sibguexporttest', $fieldname, $id),
             'enable_filemanagement' => true,
         );
+    }
+
+    protected function getQuizzes(): array
+    {
+        global $COURSE;
+        $list = get_coursemodules_in_course('quiz', $COURSE->id);
+
+        foreach ($list as $item) {
+            $choices[$item->id] = $item->name;
+        }
+
+        return $choices ?? [];
     }
 }

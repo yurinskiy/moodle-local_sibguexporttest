@@ -34,5 +34,7 @@ $string['footerbodypage'] = 'Титульная страница ПОСЛЕ но
 
 $string['settingstest'] = 'Настройки тестов';
 $string['test_id'] = 'Выбранный тест';
+$string['test_id-error_not_found'] = 'Выбранный тест не существует';
+$string['test_id-error_exists'] = 'Тест "{$a}" уже используется ';
 $string['test_order'] = 'Порядок теста';
 $string['test_delete'] = 'Удалить тест';
