@@ -169,8 +169,12 @@ class settings extends \core\persistent {
         return count($content);
     }
 
+    public function get_contents() {
+        return json_decode($this->get('content'), true);
+    }
+
     public function get_selected_quizzes() {
-        $content = json_decode($this->get('content'), true);
+        $content = $this->get_contents();
         usort($content, fn($a, $b) => $a['order'] <=> $b['order']);
 
         return array_map(fn ($a) => $a['id'], $content);

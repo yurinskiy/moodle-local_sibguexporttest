@@ -27,6 +27,8 @@ require_once($CFG->libdir . '/adminlib.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $action = optional_param('action', 'view',PARAM_TEXT);
+$page = optional_param('page', 0, PARAM_INT);
+$perpage = optional_param('perpage', 25, PARAM_INT);
 
 $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action]);
 
@@ -50,12 +52,21 @@ switch ($action) {
     case 'settings':
         $title = get_string('navigation_settings', 'local_sibguexporttest');
         $render = $PAGE->get_renderer('local_sibguexporttest', 'settings');
-        $page = $render->view();
+        $output = $render->view();
+        break;
+    case 'view':
+        $title = get_string('navigation_view', 'local_sibguexporttest');
+        /** @var \local_sibguexporttest\output\view_renderer $render */
+        $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
+        $render->init_baseurl($PAGE->url);
+        $render->init_manager();
+        $output = $render->get_table($page, $perpage);
+        $output .= $render->get_paginator($page, $perpage);
         break;
     default:
         $title = get_string('navigation_view', 'local_sibguexporttest');
         $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
-        $page = $render->view();
+        $output = $render->view();
         break;
 }
 
@@ -65,6 +76,6 @@ $PAGE->set_heading($title);
 echo $OUTPUT->header();
 echo $OUTPUT->heading($title);
 
-echo $page;
+echo $output;
 
 echo $OUTPUT->footer();
