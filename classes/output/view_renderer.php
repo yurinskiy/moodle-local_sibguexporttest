@@ -23,6 +23,8 @@ namespace local_sibguexporttest\output;
 
 defined('MOODLE_INTERNAL') || die();
 
+use local_sibguexporttest\debug;
+use local_sibguexporttest\settings;
 use plugin_renderer_base;
 
 /**
@@ -39,6 +41,15 @@ class view_renderer extends plugin_renderer_base {
      */
     public function view(): string
     {
+        global $COURSE, $DB;
+
+        $settings = settings::get_by_course($COURSE->id);
+        $contents = $settings->get_selected_quizzes();
+
+        $attempts = $DB->get_records('quiz_attempts', ['quiz' => current($contents), 'state' => 'finished'], 'id');
+debug::dump($settings->get_selected_quizzes());
+        debug::dd($attempts);
+
         return 'hello';
     }
 

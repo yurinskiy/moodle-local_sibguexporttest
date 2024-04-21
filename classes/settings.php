@@ -22,6 +22,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace local_sibguexporttest;
+use local_sibguexporttest\form\course_settings_form;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/' . $CFG->admin . '/tool/dataprivacy/lib.php');
@@ -114,8 +116,18 @@ class settings extends \core\persistent {
 
     }
 
-    public function from_form(\stdClass $formdata) {
-        foreach ($formdata as $property => $value) {
+    public function handle_form(course_settings_form $mform) {
+        $data = $mform->get_data();
+        $data->id = $this->get('id');
+        $context = $mform->get_context();
+
+        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
+            $data = file_postupdate_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, 0);
+            unset($data->{$field.'_editor'});
+            unset($data->{$field.'trust'});
+        }
+
+        foreach ($data as $property => $value) {
             if (!static::has_property($property)) {
                 continue;
             }
@@ -123,26 +135,44 @@ class settings extends \core\persistent {
             $this->raw_set($property, $value);
         }
 
-        foreach ($formdata->test_id as $key => $value){
+        foreach ($data->test_id as $key => $value){
             $content[] = [
-                'id' => $formdata->test_id[$key],
-                'order' => $formdata->test_order[$key],
+                'id' => $data->test_id[$key],
+                'order' => $data->test_order[$key],
             ];
         }
 
         $this->raw_set('content', json_encode($content ?? []));
     }
 
-    public function to_form() {
+    public function set_form(course_settings_form $mform) {
         $data = $this->to_record();
         $data->id = $this->get('id');
 
-        $content = json_decode($this->get('content'), true);
+        $context = $mform->get_context();
+        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
+            $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, 0);
+        }
+
+        $content = json_decode($this->get('content'), true) ?? [];
         usort($content, fn($a, $b) => $a['order'] <=> $b['order']);
         $data->test_repeats = count($content);
         $data->test_id = array_column($content, 'id');
         $data->test_order = array_column($content, 'order');
 
-        return $data;
+        $mform->set_data($data);
+    }
+
+    public function get_repeatno() {
+        $content = json_decode($this->get('content'), true) ?? [];
+
+        return count($content);
+    }
+
+    public function get_selected_quizzes() {
+        $content = json_decode($this->get('content'), true);
+        usort($content, fn($a, $b) => $a['order'] <=> $b['order']);
+
+        return array_map(fn ($a) => $a['id'], $content);
     }
 }

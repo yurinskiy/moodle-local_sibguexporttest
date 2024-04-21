@@ -9,7 +9,6 @@ require_once($CFG->libdir . '/formslib.php');
 class course_settings_form extends \moodleform {
     protected function definition() {
         $mform =& $this->_form;
-        $id = $this->_customdata['id'];
         $repeatno = $this->_customdata['repeatno'];
 
         // Настройки страницы
@@ -30,7 +29,7 @@ class course_settings_form extends \moodleform {
         // Настройки тестов
         $mform->addElement('header', 'settingstest', get_string('settingstest', 'local_sibguexporttest'));
 
-        $quizs = $this->getQuizzes();
+        $quizs = $this->get_quizzes();
 
         $repeatarray = [
             $mform->createElement('select', 'test_id', get_string('test_id', 'local_sibguexporttest'), $quizs),
@@ -55,10 +54,6 @@ class course_settings_form extends \moodleform {
             'test_delete',
         );
 
-        $mform->addElement('hidden', 'id', 0);
-        $mform->setType('id', PARAM_INT);
-        $mform->setDefault('id', $id);
-
         //-------------------------------------------------------------------------------
         // buttons
         $this->add_action_buttons();
@@ -67,9 +62,14 @@ class course_settings_form extends \moodleform {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
-        $quizzes = $this->getQuizzes();
+        $quizzes = $this->get_quizzes();
         $used_test_id = [];
         foreach ($data['test_id'] as $key => $test_id) {
+            if (count($used_test_id) > 0) {
+                $errors['test_id['.$key.']'] = get_string('test_id-error_max', 'local_sibguexporttest');
+                continue;
+            }
+
             if (!\array_key_exists($test_id, $quizzes)) {
                 $errors['test_id['.$key.']'] = get_string('test_id-error_not_found', 'local_sibguexporttest');
                 continue;
@@ -92,26 +92,30 @@ class course_settings_form extends \moodleform {
      */
     public function get_editor_options(string $fieldname) {
         global $CFG;
-        $context = $this->_customdata['context'];
-        $id = $this->_customdata['id'];
+        $context = $this->get_context();
+
         return array(
             'maxfiles'  => 1,
             'maxbytes'  => $CFG->maxbytes,
             'trusttext' => false,
             'noclean'   => true,
             'context'   => $context,
-            'subdirs'   => file_area_contains_subdirs($context, 'local_sibguexporttest', $fieldname, $id),
+            'subdirs'   => file_area_contains_subdirs($context, 'local_sibguexporttest', $fieldname, 0),
             'enable_filemanagement' => true,
         );
     }
 
-    protected function getQuizzes(): array
+    public function get_context(): \context_course {
+        return $this->_customdata['context'];
+    }
+
+    protected function get_quizzes(): array
     {
         global $COURSE;
         $list = get_coursemodules_in_course('quiz', $COURSE->id);
 
         foreach ($list as $item) {
-            $choices[$item->id] = $item->name;
+            $choices[$item->instance] = $item->name;
         }
 
         return $choices ?? [];

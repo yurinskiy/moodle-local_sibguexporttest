@@ -23,6 +23,7 @@ namespace local_sibguexporttest\output;
 
 defined('MOODLE_INTERNAL') || die();
 
+use local_sibguexporttest\debug;
 use local_sibguexporttest\form\course_settings_form;
 use local_sibguexporttest\settings;
 use plugin_renderer_base;
@@ -45,34 +46,21 @@ class settings_renderer extends plugin_renderer_base {
 
         $settings = settings::get_by_course($COURSE->id);
         $context = $PAGE->context;
-        $data = $settings->to_form();
 
         $output = '';
 
-        $mform = new course_settings_form($PAGE->url->out_as_local_url(false), ['context' => $context, 'id' => $data->id, 'repeatno' => $data->test_repeats]);
-
-        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
-            $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, $data->id);
-        }
-
-        $mform->set_data($data);
+        $mform = new course_settings_form($PAGE->url->out_as_local_url(false), ['context' => $context, 'repeatno' => $settings->get_repeatno()]);
+        $settings->set_form($mform);
 
         if ($mform->is_cancelled()) {
-
-        } else if ($data = $mform->get_data()) {
-            if (!$data->id) {
+            redirect($PAGE->url);
+        } else if ($mform->get_data()) {
+            if (!$settings->get('id')) {
                 $settings->set('content', '');
                 $settings->save();
             }
 
-            foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
-                $data = file_postupdate_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, $data->id);
-                unset($data->{$field.'_editor'});
-                unset($data->{$field.'trust'});
-            }
-
-            $settings->from_form($data);
-
+            $settings->handle_form($mform);
             $settings->save();
 
             redirect($PAGE->url);
@@ -97,42 +85,4 @@ class settings_renderer extends plugin_renderer_base {
 
         return $o;
     }
-}
-
-function dump(...$vars)
-{
-    if (!\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true) && !headers_sent()) {
-        header('HTTP/1.1 500 Internal Server Error');
-    }
-
-    echo '<pre>';
-
-    if (array_key_exists(0, $vars) && 1 === count($vars)) {
-        echo print_r($vars[0], 1);
-    } else {
-        foreach ($vars as $k => $v) {
-            echo print_r($v, 1);
-        }
-    }
-    echo '</pre>';
-}
-
-function dd(...$vars)
-{
-    if (!\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true) && !headers_sent()) {
-        header('HTTP/1.1 500 Internal Server Error');
-    }
-
-    echo '<pre>';
-
-    if (array_key_exists(0, $vars) && 1 === count($vars)) {
-        echo print_r($vars[0], 1);
-    } else {
-        foreach ($vars as $k => $v) {
-            echo print_r($v, 1);
-        }
-    }
-    echo '</pre>';
-
-    exit(1);
 }
