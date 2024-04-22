@@ -28,7 +28,6 @@ require_once($CFG->dirroot . '/enrol/locallib.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 use course_enrolment_manager;
-use html_table;
 use html_writer;
 use local_sibguexporttest\debug;
 use local_sibguexporttest\settings;
@@ -62,12 +61,13 @@ class view_renderer extends plugin_renderer_base {
         $contents = $this->settings->get_contents();
         $this->quizzes = $DB->get_records_list('quiz', 'id', array_column($contents, 'id'));
         usort($this->quizzes, fn ($a, $b) => $contents[$a->id]['order'] <=> $contents[$b->id]['order']);
+
+
     }
 
     public function init_baseurl(moodle_url $url) {
         $this->baseurl = $url;
     }
-
 
     /**
      * @return string HTML to output.
@@ -89,39 +89,8 @@ class view_renderer extends plugin_renderer_base {
 
     public function get_table($page = 0, $perpage = 25) {
         $output = html_writer::start_tag('table', ['class' => 'generaltable table-hover table-bordered']) . "\n";
-
         $output .= $this->get_head();
-
-        $output .= html_writer::start_tag('tbody') . "\n";
-
-        $users = $this->get_manager()->get_users('lastcourseaccess', 'DESC', $page, $perpage);
-        foreach ($users as $user) {
-            $output .= html_writer::start_tag('tr') . "\n";
-            $output .= html_writer::tag('th', $this->col_select($user), ['scope' => 'row']) . "\n";
-
-            $url = new moodle_url('/user/view.php', ['id' => $user->id]);
-            $output .= html_writer::tag('td', html_writer::link($url, \implode(' ', [$user->lastname, $user->firstname]))) . "\n";
-            $output .= html_writer::tag('td', $user->email) . "\n";
-
-            foreach ($this->quizzes as $quiz) {
-                $attempts = quiz_get_user_attempts($quiz->id, $user->id, 'all', true);
-                $lastattempt = end($attempts);
-
-                if (!empty($lastattempt->state)) {
-                    $output .= html_writer::tag('td', userdate($lastattempt->timefinish)) . "\n";
-                    $output .= html_writer::tag('td', quiz_attempt::state_name($lastattempt->state)) . "\n";
-                } else {
-                    $output .= html_writer::tag('td', '-', ['colspan' => 2]) . "\n";
-                }
-            }
-
-            $url = new moodle_url('/user/view.php', ['id' => $user->id]);
-            $output .= html_writer::tag('td', html_writer::link($url, 'Скачать')) . "\n";
-            $output .= html_writer::end_tag('tr') . "\n";
-        }
-
-        $output .= html_writer::end_tag('tbody') . "\n";
-
+        $output .= $this->get_body($page, $perpage);
         $output .= html_writer::end_tag('table') . "\n";
 
         return $output;
@@ -161,6 +130,39 @@ class view_renderer extends plugin_renderer_base {
         return $output;
     }
 
+    private function get_body($page, $perpage) {
+        $output = html_writer::start_tag('tbody') . "\n";
+
+        foreach ($this->get_users($page, $perpage) as $user) {
+            $output .= html_writer::start_tag('tr') . "\n";
+            $output .= html_writer::tag('th', $this->col_select($user), ['scope' => 'row']) . "\n";
+
+            $url = new moodle_url('/user/view.php', ['id' => $user->id]);
+            $output .= html_writer::tag('td', html_writer::link($url, \implode(' ', [$user->lastname, $user->firstname]))) . "\n";
+            $output .= html_writer::tag('td', $user->email) . "\n";
+
+            foreach ($this->quizzes as $quiz) {
+                $attempts = quiz_get_user_attempts($quiz->id, $user->id, 'all', true);
+                $lastattempt = end($attempts);
+
+                if (!empty($lastattempt->state)) {
+                    $output .= html_writer::tag('td', userdate($lastattempt->timefinish)) . "\n";
+                    $output .= html_writer::tag('td', quiz_attempt::state_name($lastattempt->state)) . "\n";
+                } else {
+                    $output .= html_writer::tag('td', '-', ['colspan' => 2]) . "\n";
+                }
+            }
+
+            $url = new moodle_url('/local/sibguexporttest/generate.php', ['courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id]);
+            $output .= html_writer::tag('td', html_writer::link($url, 'Скачать')) . "\n";
+            $output .= html_writer::end_tag('tr') . "\n";
+        }
+
+        $output .= html_writer::end_tag('tbody') . "\n";
+
+        return $output;
+    }
+
     private function get_baseurl() {
         if (!$this->baseurl) {
             throw new \coding_exception('Не инициализирован компонент базовой ссылки');
@@ -177,7 +179,11 @@ class view_renderer extends plugin_renderer_base {
         return $this->manager;
     }
 
-    public function col_select($data) {
+    private function get_users($page = 0, $perpage = 25) {
+        return $this->get_manager()->get_users('lastcourseaccess', 'DESC', $page, $perpage);
+    }
+
+    private function col_select($data) {
         global $OUTPUT;
 
         $checkbox = new \core\output\checkbox_toggleall('participants-table', false, [
