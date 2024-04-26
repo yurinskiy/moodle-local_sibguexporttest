@@ -175,7 +175,7 @@ class settings extends \core\persistent {
 
         $context = $mform->get_context();
         foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
-            $data = $this->file_prepare($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, 0);
+            $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, 0);
         }
 
         $content = json_decode($this->get('content'), true) ?? [];
@@ -202,106 +202,5 @@ class settings extends \core\persistent {
         usort($content, fn($a, $b) => $a['order'] <=> $b['order']);
 
         return array_map(fn ($a) => $a['id'], $content);
-    }
-
-    public function file_prepare($data, $field, array $options, $context=null, $component=null, $filearea=null, $itemid=null) {
-        $options = (array)$options;
-        if (!isset($options['trusttext'])) {
-            $options['trusttext'] = false;
-        }
-        if (!isset($options['forcehttps'])) {
-            $options['forcehttps'] = false;
-        }
-        if (!isset($options['subdirs'])) {
-            $options['subdirs'] = false;
-        }
-        if (!isset($options['maxfiles'])) {
-            $options['maxfiles'] = 0; // no files by default
-        }
-        if (!isset($options['noclean'])) {
-            $options['noclean'] = false;
-        }
-
-        //sanity check for passed context. This function doesn't expect $option['context'] to be set
-        //But this function is called before creating editor hence, this is one of the best places to check
-        //if context is used properly. This check notify developer that they missed passing context to editor.
-        if (isset($context) && !isset($options['context'])) {
-            //if $context is not null then make sure $option['context'] is also set.
-            debugging('Context for editor is not set in editoroptions. Hence editor will not respect editor filters', DEBUG_DEVELOPER);
-        } else if (isset($options['context']) && isset($context)) {
-            //If both are passed then they should be equal.
-            if ($options['context']->id != $context->id) {
-                $exceptionmsg = 'Editor context ['.$options['context']->id.'] is not equal to passed context ['.$context->id.']';
-                throw new coding_exception($exceptionmsg);
-            }
-        }
-
-        if (is_null($itemid) or is_null($context)) {
-            $contextid = null;
-            $itemid = null;
-            if (!isset($data)) {
-                $data = new stdClass();
-            }
-            if (!isset($data->{$field})) {
-                $data->{$field} = '';
-            }
-            if (!isset($data->{$field.'format'})) {
-                $data->{$field.'format'} = editors_get_preferred_format();
-            }
-            if (!$options['noclean']) {
-                $data->{$field} = clean_text($data->{$field}, $data->{$field.'format'});
-            }
-
-        } else {
-            if ($options['trusttext']) {
-                // noclean ignored if trusttext enabled
-                if (!isset($data->{$field.'trust'})) {
-                    $data->{$field.'trust'} = 0;
-                }
-                $data = trusttext_pre_edit($data, $field, $context);
-            } else {
-                if (!$options['noclean']) {
-                    $data->{$field} = clean_text($data->{$field}, $data->{$field.'format'});
-                }
-            }
-            $contextid = $context->id;
-        }
-
-        if ($options['maxfiles'] != 0) {
-            $currenttext = $this->file_prepare_base64($contextid, $component, $filearea, $itemid, $options, $data->{$field});
-            $data->{$field.'_editor'} = array('text'=>$currenttext, 'format'=>$data->{$field.'format'}, 'itemid'=>0);
-        } else {
-            $data->{$field.'_editor'} = array('text'=>$data->{$field}, 'format'=>$data->{$field.'format'}, 'itemid'=>0);
-        }
-
-        return $data;
-    }
-
-    public function file_prepare_base64($contextid, $component, $filearea, $itemid, array $options=null, $text=null) {
-        global $CFG, $USER;
-
-        $options = (array)$options;
-        if (!isset($options['subdirs'])) {
-            $options['subdirs'] = false;
-        }
-
-        $fs = get_file_storage();
-        // create a new area and copy existing files into
-        if (!is_null($itemid) and $files = $fs->get_area_files($contextid, $component, $filearea, $itemid)) {
-            foreach ($files as $file) {
-                if ($file->is_directory() and $file->get_filepath() === '/') {
-                    // we need a way to mark the age of each draft area,
-                    // by not copying the root dir we force it to be created automatically with current timestamp
-                    continue;
-                }
-                if (!$options['subdirs'] and ($file->is_directory() or $file->get_filepath() !== '/')) {
-                    continue;
-                }
-
-                return str_replace('src="@@PLUGINFILE@@/', 'src="data:'.$file->get_filename().';base64,'.base64_encode($file->get_content()).'" data-filename="', $text);
-            }
-        }
-
-        return $text;
     }
 }

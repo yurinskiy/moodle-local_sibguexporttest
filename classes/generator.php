@@ -6,10 +6,9 @@ use local_sibguexporttest\form\course_settings_form;
 use local_sibguexporttest\output\generator_renderer;
 use local_sibguexporttest\output\question_renderer;
 use mikehaertl\wkhtmlto\Pdf;
-use mod_quiz\plugininfo\quiz;
-use ReflectionProperty;
 
 defined('MOODLE_INTERNAL') || die;
+
 require_once($CFG->dirroot . '/local/sibguexporttest/vendor/autoload.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
@@ -55,7 +54,7 @@ CSS;
 
         $html = $this->renderer->get_html($content, '', $customcss);
 
-        $temppath = tempnam(sys_get_temp_dir(), 'header').'.html';
+        $temppath = tempnam(sys_get_temp_dir(), 'header');
         file_put_contents($temppath, $html);
 
         return $temppath;
@@ -75,7 +74,7 @@ CSS;
 
         $html = $this->renderer->get_html($content, '', $customcss);
 
-        $temppath = tempnam(sys_get_temp_dir(), 'footer').'.html';
+        $temppath = tempnam(sys_get_temp_dir(), 'footer');
         file_put_contents($temppath, $html);
 
         return $temppath;
@@ -100,6 +99,8 @@ CSS;
     <h1 align="center">{$this->get_variant()}</h1>
     <div>{$this->settings->footerbodypage_editor['text']}</div>
 HTML;
+
+        debug::dd($content);
 
         return $this->renderer->get_html($content);
     }
@@ -146,8 +147,6 @@ HTML;
         $output .= \html_writer::end_tag('tbody');
         $output .= \html_writer::end_tag('table');
 
-        //exit( $this->renderer->get_html($output));
-
         return $this->renderer->get_html($output);
     }
 
@@ -163,6 +162,8 @@ HTML;
     }
 
     public function generate() {
+        global $CFG;
+
         $headerpath = $this->get_header($this->settings->headerpage_editor['text'], $this->get_variant());
         $footerpath = $this->get_footer($this->settings->footerpage_editor['text']);
 
@@ -175,6 +176,7 @@ HTML;
             'footer-line',
             'footer-spacing' => 5,
             'page-size' => 'A4',
+            'cookie' => ['MoodleSession'.$CFG->sessioncookie => session_id()]
         ]);
 
         $pdf->addPage($this->get_first_page());
