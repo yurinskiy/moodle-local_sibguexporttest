@@ -35,8 +35,13 @@ if (!$course = $DB->get_record('course', ['id' => $courseid])) {
 require_login($course);
 $context = context_course::instance($course->id);
 $PAGE->set_context($context);
+$PAGE->set_url('/local/sibguexporttest/generate.php', ['courseid' => $courseid, 'userid' => $userid]);
 
-$generator = new \local_sibguexporttest\generator($courseid, $userid);
+/** @var \local_sibguexporttest\output\generator_renderer $renderer */
+$renderer = $PAGE->get_renderer('local_sibguexporttest', 'generator');
+/** @var \local_sibguexporttest\output\question_renderer $qrenderer */
+$qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
+$generator = new \local_sibguexporttest\generator($courseid, $userid, $renderer, $qrenderer);
 
 $generator->generate();
 
