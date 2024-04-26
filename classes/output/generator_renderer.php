@@ -120,7 +120,6 @@ div {
     -webkit-flex-direction: row;
     -webkit-align-items: stretch;
     align-items: stretch;
-    border: 1px solid black;
 } 
 
 .que.multichoice .answer div.r0 input, .que.multichoice .answer div.r1 input {
@@ -129,8 +128,9 @@ div {
 }
 
 .que.multichoice .answer div.r0 > .w-auto, .que.multichoice .answer div.r1 > .w-auto {
+    flex: 1!important;
+    -webkit-box-flex: 1!important;
     -webkit-flex: 1!important;
-    flex: 1;
 }
 
 .que .specificfeedback, .que .generalfeedback, .que .numpartscorrect .que .rightanswer, .que .im-feedback, .que .feedback, .que p {
