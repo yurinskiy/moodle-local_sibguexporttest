@@ -2,15 +2,16 @@
 
 namespace local_sibguexporttest;
 
-use local_sibguexporttest\form\course_settings_form;
 use local_sibguexporttest\output\generator_renderer;
 use local_sibguexporttest\output\question_renderer;
+use mikehaertl\tmp\File;
 use mikehaertl\wkhtmlto\Pdf;
 
 defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->dirroot . '/local/sibguexporttest/vendor/autoload.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+require_once($CFG->dirroot . '/lib/filelib.php');
 
 class generator {
     public int $userid;
@@ -51,15 +52,53 @@ body {
 }
 CSS;
 
-        $html = $this->renderer->get_html($content, '', $customcss);
+        $this->link_to_base64($content);
 
-        $temppath = tempnam(sys_get_temp_dir(), 'header');
-        file_put_contents($temppath, $html);
-
-        return $temppath;
+        return $this->renderer->get_html($content, '', $customcss);
     }
 
+    protected function get_file($url) {
+        global $CFG;
 
+        // Make sure the session is closed properly, this prevents problems in IIS
+        // and also some potential PHP shutdown issues.
+        \core\session\manager::write_close();
+
+        $cookies = 'MoodleSession'.$CFG->sessioncookie .'='.session_id(); // Add your cookies here
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $cookies);
+        $imageData = curl_exec($ch);
+        curl_close($ch);
+
+        return $imageData;
+
+    }
+
+    protected function link_to_base64(&$content) {
+        preg_match_all('/<img[^>]+src="([^"]+)"[^>]*>/', $content, $matches);
+
+        foreach ($matches[1] as $imageSrc) {
+            $imageData = $this->get_file($imageSrc);
+            $imageData64 = base64_encode($imageData);
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_buffer($finfo, $imageData);
+            finfo_close($finfo);
+
+            $imageType = '';
+            if ($mimeType === 'image/jpeg') {
+                $imageType = 'jpeg';
+            } elseif ($mimeType === 'image/png') {
+                $imageType = 'png';
+            } // Add more image types here if needed
+
+            if (!empty($imageType)) {
+                $content = str_replace($imageSrc, 'data:' . $mimeType . ';base64,' . $imageData64, $content);
+            }
+        }
+    }
 
     public function get_footer($body) {
         $content = <<<HTML
@@ -71,12 +110,9 @@ body {
 }
 CSS;
 
-        $html = $this->renderer->get_html($content, '', $customcss);
+        $this->link_to_base64($content);
 
-        $temppath = tempnam(sys_get_temp_dir(), 'footer');
-        file_put_contents($temppath, $html);
-
-        return $temppath;
+        return $this->renderer->get_html($content, '', $customcss);
     }
 
     public function get_variant() {
@@ -99,7 +135,7 @@ CSS;
     <div>{$this->settings->footerbodypage_editor['text']}</div>
 HTML;
 
-        debug::dd($content);
+        $this->link_to_base64($content);
 
         return $this->renderer->get_html($content);
     }
@@ -146,6 +182,8 @@ HTML;
         $output .= \html_writer::end_tag('tbody');
         $output .= \html_writer::end_tag('table');
 
+        $this->link_to_base64($output);
+
         return $this->renderer->get_html($output);
     }
 
@@ -161,30 +199,24 @@ HTML;
     }
 
     public function generate() {
-        global $CFG;
-
-        $headerpath = $this->get_header($this->settings->headerpage_editor['text'], $this->get_variant());
-        $footerpath = $this->get_footer($this->settings->footerpage_editor['text']);
+        $header_content = $this->get_header($this->settings->headerpage_editor['text'], $this->get_variant());
+        $footer_content = $this->get_footer($this->settings->footerpage_editor['text']);
 
         $pdf = new Pdf([
             'encoding' => 'UTF-8',
-            'header-html' => $headerpath,
+            'header-html' => new File($header_content, '.html'),
             'header-line',
             'header-spacing' => 5,
-            'footer-html' => $footerpath,
+            'footer-html' => new File($footer_content, '.html'),
             'footer-line',
             'footer-spacing' => 5,
             'page-size' => 'A4',
-            'cookie' => ['MoodleSession'.$CFG->sessioncookie => session_id()]
         ]);
 
         $pdf->addPage($this->get_first_page());
         $pdf->addPage($this->get_test_page());
 
         $content = $pdf->toString();
-
-        unlink($headerpath);
-        unlink($footerpath);
 
         if ($errors = $pdf->getError()) {
             debug::dd($errors);
