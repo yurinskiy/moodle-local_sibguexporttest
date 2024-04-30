@@ -33,11 +33,10 @@ class generator {
 
     private function get_settings($courseid) {
         $settings = settings::get_by_course($courseid);
-        $context = \context_course::instance($courseid);
 
         $this->quizzes = $settings->get_selected_quizzes();
 
-        return $settings->get_pdfdata(new course_settings_form(null, ['context' => $context, 'repeatno' => $settings->get_repeatno()]));
+        return $settings->get_pdfdata();
     }
 
     public function get_header($body, $variant) {

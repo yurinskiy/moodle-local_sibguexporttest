@@ -122,7 +122,7 @@ class settings extends \core\persistent {
         $context = $mform->get_context();
 
         foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
-            $data = file_postupdate_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, 0);
+            $data = file_postupdate_standard_editor($data, $field, $mform->get_editor_options(), $context, 'local_sibguexporttest', $field, $data->id);
             unset($data->{$field.'_editor'});
             unset($data->{$field.'trust'});
         }
@@ -154,28 +154,24 @@ class settings extends \core\persistent {
         $data = $this->to_record();
         $data->id = $this->get('id');
 
-        $context = $mform->get_context();
-        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
-            $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, 0);
-        }
-
-        $content = json_decode($this->get('content'), true) ?? [];
-        usort($content, fn($a, $b) => $a['order'] <=> $b['order']);
-        $data->test_repeats = count($content);
-        $data->test_id = array_column($content, 'id');
-        $data->test_order = array_column($content, 'order');
-
-        return $data;
+        return $this->prepare_data($data, $mform);
     }
 
 
-    public function get_pdfdata(course_settings_form $mform) {
+    public function get_pdfdata() {
         $data = $this->to_record();
         $data->id = $this->get('id');
 
+        $context = \context_course::instance($this->get('courseid'));
+        $mform = new course_settings_form(null, ['id' => $this->get('id'), 'context' => $context, 'repeatno' => $this->get_repeatno()]);
+
+        return $this->prepare_data($data, $mform);
+    }
+
+    protected function prepare_data($data, course_settings_form $mform) {
         $context = $mform->get_context();
         foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
-            $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options($field), $context, 'local_sibguexporttest', $field, 0);
+            $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options(), $context, 'local_sibguexporttest', $field, $data->id);
         }
 
         $content = json_decode($this->get('content'), true) ?? [];

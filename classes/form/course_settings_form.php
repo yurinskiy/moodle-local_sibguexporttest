@@ -4,6 +4,8 @@ namespace local_sibguexporttest\form;
 
 global $CFG;
 
+use context_user;
+
 require_once($CFG->libdir . '/formslib.php');
 
 class course_settings_form extends \moodleform {
@@ -14,17 +16,10 @@ class course_settings_form extends \moodleform {
         // Настройки страницы
         $mform->addElement('header', 'settingspage', get_string('settingspage', 'local_sibguexporttest'));
 
-        $mform->addElement('editor', 'headerpage_editor', get_string('headerpage', 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options('headerpage'));
-        $mform->setType('headerpage_editor', PARAM_RAW);
-
-        $mform->addElement('editor', 'footerpage_editor', get_string('footerpage', 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options('footerpage'));
-        $mform->setType('footerpage_editor', PARAM_RAW);
-
-        $mform->addElement('editor', 'headerbodypage_editor', get_string('headerbodypage', 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options('headerbodypage'));
-        $mform->setType('headerbodypage_editor', PARAM_RAW);
-
-        $mform->addElement('editor', 'footerbodypage_editor', get_string('footerbodypage', 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options('footerbodypage'));
-        $mform->setType('footerbodypage_editor', PARAM_RAW);
+        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
+            $mform->addElement('editor', $field.'_editor', get_string($field, 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options());
+            $mform->setType($field.'_editor', PARAM_RAW);
+        }
 
         // Настройки тестов
         $mform->addElement('header', 'settingstest', get_string('settingstest', 'local_sibguexporttest'));
@@ -88,21 +83,54 @@ class course_settings_form extends \moodleform {
 
     /**
      * Returns the description editor options.
-     * @return array
+     * @return array<string, mixed>
      */
-    public function get_editor_options(string $fieldname) {
+    public function get_editor_options(): array
+    {
         global $CFG;
-        $context = $this->get_context();
 
-        return array(
+        return [
             'maxfiles'  => 1,
             'maxbytes'  => $CFG->maxbytes,
-            'trusttext' => false,
             'noclean'   => true,
-            'context'   => $context,
-            'subdirs'   => file_area_contains_subdirs($context, 'local_sibguexporttest', $fieldname, 0),
+            'context'   => $this->get_context(),
+            'accepted_types' => 'web_image',
+            'removeorphaneddrafts' => true,
             'enable_filemanagement' => true,
-        );
+        ];
+    }
+
+    protected function validate_draft_files() {
+        global $USER;
+
+        $errors = parent::validate_draft_files();
+        if ($errors !== true) {
+            return $errors;
+        }
+
+        $errors = [];
+
+        $mform =& $this->_form;
+        foreach ($mform->_elements as $element) {
+            if ($element->_type == 'editor') {
+                $maxfiles = $element->getMaxfiles();
+                if ($maxfiles > 0) {
+                    $draftid = (int) ($element->getValue()['itemid'] ?? 0);
+                    $fs = get_file_storage();
+                    $context = context_user::instance($USER->id);
+                    $files = $fs->get_area_files($context->id, 'user', 'draft', $draftid, '', false);
+                    if (count($files) > $maxfiles) {
+                        $errors[$element->getName()] = get_string('err_maxfiles', 'form', $maxfiles);
+                    }
+                }
+            }
+        }
+
+        if (empty($errors)) {
+            return true;
+        } else {
+            return $errors;
+        }
     }
 
     public function get_context(): \context_course {

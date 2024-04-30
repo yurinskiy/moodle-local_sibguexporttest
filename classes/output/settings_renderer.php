@@ -45,21 +45,23 @@ class settings_renderer extends plugin_renderer_base {
         global $PAGE, $COURSE;
 
         $settings = settings::get_by_course($COURSE->id);
+        if (!$settings->get('id')) {
+            $settings->set('content', '');
+            $settings->save();
+
+            $settings = settings::get_by_course($COURSE->id);
+        }
+
         $context = $PAGE->context;
 
         $output = '';
 
-        $mform = new course_settings_form($PAGE->url->out_as_local_url(false), ['context' => $context, 'repeatno' => $settings->get_repeatno()]);
+        $mform = new course_settings_form($PAGE->url->out_as_local_url(false), ['id' => $settings->get('id'), 'context' => $context, 'repeatno' => $settings->get_repeatno()]);
         $settings->set_form($mform);
 
         if ($mform->is_cancelled()) {
             redirect($PAGE->url);
         } else if ($mform->get_data()) {
-            if (!$settings->get('id')) {
-                $settings->set('content', '');
-                $settings->save();
-            }
-
             $settings->handle_form($mform);
             $settings->save();
 

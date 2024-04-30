@@ -30,16 +30,8 @@ class debug {
             header('HTTP/1.1 500 Internal Server Error');
         }
 
-        echo '<pre>';
 
-        if (array_key_exists(0, $vars) && 1 === count($vars)) {
-            echo print_r($vars[0], 1);
-        } else {
-            foreach ($vars as $k => $v) {
-                echo print_r($v, 1);
-            }
-        }
-        echo '</pre>';
+        echo self::ddd(...$vars);
     }
 
     public static function dd(...$vars)
@@ -48,17 +40,25 @@ class debug {
             header('HTTP/1.1 500 Internal Server Error');
         }
 
-        echo '<pre>';
-
-        if (array_key_exists(0, $vars) && 1 === count($vars)) {
-            echo print_r($vars[0], 1);
-        } else {
-            foreach ($vars as $k => $v) {
-                echo print_r($v, 1);
-            }
-        }
-        echo '</pre>';
+        echo self::ddd(...$vars);
 
         exit(1);
+    }
+
+    protected static function ddd(...$vars) {
+        ob_start();
+
+        if (array_key_exists(0, $vars) && 1 === count($vars)) {
+            echo var_export($vars[0]);
+        } else {
+            foreach ($vars as $k => $v) {
+                echo var_export($v);
+            }
+        }
+
+        $o = ob_get_contents();
+        ob_end_clean();
+
+        return '<pre>'.htmlspecialchars($o).'</pre>';
     }
 }
