@@ -57,10 +57,12 @@ class course_settings_form extends \moodleform {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
+        $max_tests = 2;
+
         $quizzes = $this->get_quizzes();
         $used_test_id = [];
         foreach ($data['test_id'] as $key => $test_id) {
-            if (count($used_test_id) > 0) {
+            if (count($used_test_id) > $max_tests - 1) {
                 $errors['test_id['.$key.']'] = get_string('test_id-error_max', 'local_sibguexporttest');
                 continue;
             }

@@ -142,9 +142,10 @@ HTML;
 
     public function get_test_page() {
 
-        $output = \html_writer::start_tag('table');
+        $output = \html_writer::start_tag('table', ['class' => 'questions debug']);
         $output .= \html_writer::start_tag('tbody');
         $questionno = 1;
+
         foreach ($this->quizzes as $quizid) {
             $quiz = \quiz::create($quizid, $this->userid);
             // Look for an existing attempt.
@@ -152,27 +153,14 @@ HTML;
 
             $lastattempt = end($attempts);
             if (!$lastattempt) {
-                $output .= \html_writer::start_tag('tr');
-                $output .= \html_writer::tag('td', $this->get_not_found_attempts($quiz, $questionno), ['colspan' => 2]);
-                $output .= \html_writer::end_tag('tr');
+                $output .= $this->get_not_found_attempts($quiz, $questionno);
                 continue;
             }
 
             $attempt = \quiz_attempt::create($lastattempt->id);
             $slots = $attempt->get_slots();
-
             foreach ($slots as $slot) {
-                $displayoptions = $attempt->get_display_options_with_edit_link(true, $slot, null);
-                $question_attempt = $attempt->get_question_attempt($slot);
-
-                $output .= \html_writer::start_tag('tr');
-                $output .= \html_writer::tag('td', $this->qrenderer->question_gen(
-                    $question_attempt,
-                    $displayoptions,
-                    $questionno
-                ));
-                $output .= \html_writer::tag('td', $questionno, ['style' => 'vertical-align: top']);
-                $output .= \html_writer::end_tag('tr');
+                $output .= $this->print_question($attempt, $questionno, $slot);
 
                 $questionno++;
             }
@@ -184,16 +172,107 @@ HTML;
 
         $this->link_to_base64($output);
 
-        return $this->renderer->get_html($output);
+        $customcss = <<<CSS
+table.debug tbody tr > th,
+table.debug tbody tr > td {
+    border: 1px dotted black;
+}
+
+table.questions tbody tr > th {
+    width: 48px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    vertical-align: top;
+}
+
+table.questions tbody tr > td {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 8px;
+}
+
+table.questions tbody tr > td .qtext > p,
+table.questions tbody tr > td .rightanswer > p,
+table.questions tbody tr > td .multichoice .answer > div > div p {
+    margin: 0!important;
+    padding: 0!important;
+}
+
+table.questions tbody tr > td .multichoice .answer > div {
+    counter-increment: section;
+}
+
+table.questions tbody tr > td .multichoice .answer > div::before {
+    content: counter(section) ". ";
+    padding-left: 32px;
+    padding-right: 8px;
+}
+
+table.questions tbody tr > td .multichoice .answer > div,
+.d-flex {
+    display: -webkit-box;
+    display: flex;
+}
+
+table.questions tbody tr > td .multichoice .answer > div > *,
+.d-flex > * {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+}
+
+table.questions tbody tr > td .multichoice .answer > div > input,
+table.questions tbody tr > td .multichoice .answer > div .answernumber {
+    display: none!important;
+}
+
+.question-number {
+    display: block;
+    width: 48px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 14pt;
+    line-height: 12pt;
+    border: 1px solid black;
+    font-weight: bold;
+    font-style: normal;
+    word-wrap: normal;
+}
+CSS;
+
+
+        return $this->renderer->get_html($output, '', $customcss);
     }
 
     public function get_not_found_attempts(\quiz $quiz, &$number) {
-        $cnt = 5; // TODO получить количество вопросов пропущенного теста
+        $cnt = $quiz->get_structure()->get_question_count() - 1;
 
-        $content = <<<HTML
-<div><p>Абитуриент не совершил запуск тестового задания "{$quiz->get_quiz_name()}", на основе попытки прохождения которого формируются вопросы № {$number} - {($number + $cnt)}</p></div>
-HTML;
-        $number += $cnt;
+        $content = \html_writer::start_tag('tr');
+        $content .= \html_writer::tag('th', \html_writer::nonempty_tag('i', $number.'<br>-<br>'.($number + $cnt), ['class' => 'question-number']), ['scope' => 'row']);
+        $content .= \html_writer::tag('td', get_string('test_not_start', 'local_sibguexporttest', [
+            'name' => $quiz->get_quiz_name(),
+            'from' => $number,
+            'to' => $number + $cnt,
+        ]));
+        $content .= \html_writer::end_tag('tr');
+
+        $number += $cnt + 1;
+
+        return $content;
+    }
+
+    public function print_question(\quiz_attempt $attempt, $number, $slot) {
+        $displayoptions = clone($attempt->get_display_options(true));
+        $question_attempt = $attempt->get_question_attempt($slot);
+
+        $content = \html_writer::start_tag('tr');
+        $content .= \html_writer::tag('th', \html_writer::nonempty_tag('i', $number, ['class' => 'question-number']), ['scope' => 'row']);
+        $content .= \html_writer::tag('td', $this->qrenderer->question_gen(
+                $question_attempt,
+                $displayoptions,
+                $number
+            ));
+        $content .= \html_writer::end_tag('tr');
 
         return $content;
     }
@@ -212,6 +291,8 @@ HTML;
             'footer-spacing' => 5,
             'page-size' => 'A4',
         ]);
+
+        //echo $this->get_test_page();die;
 
         $pdf->addPage($this->get_first_page());
         $pdf->addPage($this->get_test_page());

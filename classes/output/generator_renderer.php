@@ -79,72 +79,47 @@ HTML;
     }
 
     public function get_head_css($customcss = '') {
-return <<<HTML
-<style>
-    .hidden-in-print {
-  display: none; }
+        global $CFG;
+
+        $times_new_roman = file_get_contents($CFG->dirroot . '/local/sibguexporttest/vendor/Times New Roman.ttf') ?? '';
+        $times_new_roman_base64 = base64_encode($times_new_roman);
+
+        $font = <<<CSS
+@font-face {
+    font-family: "Times New Roman";
+    src: url(data:font/truetype;charset=utf-8;base64,$times_new_roman_base64);
+}
 
 body {
-  background: white; }
+    font-family: "Times New Roman",sans-serif;
+}
+CSS;
 
-.main-container {
-  background: white;
-  padding: 0px; }
-
-.page-break {
-  height: 1px;
-  page-break-before: always; }
-
+        $normalize = file_get_contents($CFG->dirroot . '/local/sibguexporttest/vendor/normalize.css') ?? '';
+        $pageBreak = <<<CSS
 table {
-  border-collapse: collapse; }
-  table tr, table td, table th {
-    page-break-inside: avoid !important; }
-    
-*, *::before, *::after {
-    box-sizing: border-box;
+    border-collapse: collapse; 
 }
+table tr, table td, table th {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important; 
+}
+.page-break {
+  height: 20px;
+  page-break-before: always; 
+  break-before: page;
+}
+CSS;
 
-div {
-    display: block;
-}
 
-.que {
-    margin-bottom: 1rem;
-}
-    
-.que.multichoice .answer div.r0, .que.multichoice .answer div.r1 {
-    display: -webkit-box; /* wkhtmltopdf uses this one */
-    display: flex;
-    margin: 0.25rem 0;
-    flex-direction: row;
-    -webkit-flex-direction: row;
-    -webkit-align-items: stretch;
-    align-items: stretch;
-} 
-
-.que.multichoice .answer div.r0 input, .que.multichoice .answer div.r1 input {
-    margin: 0.3rem 0.5rem;
-    width: 14px;
-}
-
-.que.multichoice .answer div.r0 > .w-auto, .que.multichoice .answer div.r1 > .w-auto {
-    flex: 1!important;
-    -webkit-box-flex: 1!important;
-    -webkit-flex: 1!important;
-}
-
-.que .specificfeedback, .que .generalfeedback, .que .numpartscorrect .que .rightanswer, .que .im-feedback, .que .feedback, .que p {
-    margin: 0 0 0.5em;
-}
-    
-.ml-1, .mx-1 {
-    margin-left: 0.25rem!important;
-}
-    
+        return <<<HTML
+<style>$font</style>
+<style>$normalize</style>
+<style>
+    $pageBreak
     $customcss
 </style>
 HTML;
-
     }
 
     public function get_html($content, $title = '', $customcss = '', $customjs = '') {
@@ -154,6 +129,7 @@ HTML;
         $output .= html_writer::start_tag('head');
         $output .= html_writer::tag('title', $title);
         $output .= html_writer::empty_tag('meta', ['http-equiv' => 'Content-Type', 'content' => 'text/html; charset=UTF-8']);
+        $output .= $this->get_head_js($customjs);
         $output .= $this->get_head_js($customjs);
         $output .= $this->get_head_css($customcss);
         $output .= html_writer::end_tag('head');

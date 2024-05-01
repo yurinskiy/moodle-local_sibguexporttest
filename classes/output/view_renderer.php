@@ -59,10 +59,9 @@ class view_renderer extends plugin_renderer_base {
         $this->settings = settings::get_by_course($COURSE->id);
 
         $contents = $this->settings->get_contents();
+        $contents = array_column($contents, 'order','id');
         $this->quizzes = $DB->get_records_list('quiz', 'id', array_column($contents, 'id'));
-        usort($this->quizzes, fn ($a, $b) => $contents[$a->id]['order'] <=> $contents[$b->id]['order']);
-
-
+        usort($this->quizzes, fn ($a, $b) => ((int)$contents[$a->id]) <=> ((int)$contents[$b->id]));
     }
 
     public function init_baseurl(moodle_url $url) {
