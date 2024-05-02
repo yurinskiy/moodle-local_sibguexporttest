@@ -93,6 +93,10 @@ HTML;
 body {
     font-family: "Times New Roman",sans-serif;
 }
+
+* {
+    font-size: 14pt;
+}
 CSS;
 
         $normalize = file_get_contents($CFG->dirroot . '/local/sibguexporttest/vendor/normalize.css') ?? '';
