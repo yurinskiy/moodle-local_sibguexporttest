@@ -42,13 +42,22 @@ class generator {
 
     public function get_header($body, $variant) {
         $content = <<<HTML
-    <div style="position: absolute; top: 10px; left: 0; text-align: right; white-space: nowrap; overflow: hidden;">{$variant}</div>
-    <div style="position: absolute; top: 10px; right: 0; text-align: right; white-space: nowrap; overflow: hidden;"><span class="page"></span> / <span class="topage"></span></div>
-    <div>{$body}</div>
+<table class="debug">
+<thead>
+<tr>
+<td>{$variant}</td>
+<td><span class="page"></span> / <span class="topage"></span></td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2">{$body}</td>
+</tr>
+</tbody></table>
 HTML;
         $customcss = <<<CSS
-body {
-    padding-top: 1px; padding-bottom: 6px;
+body > table thead td:last-child {
+    text-align: right;
 }
 CSS;
 
@@ -102,17 +111,18 @@ CSS;
 
     public function get_footer($body) {
         $content = <<<HTML
-    <div>$body</div>
+<table class="debug">
+<tbody>
+<tr>
+<td>$body</td>
+</tr>
+</tbody>
+</table>
 HTML;
-        $customcss = <<<CSS
-body {
-    padding-top: 6px; padding-bottom: 1px;
-}
-CSS;
 
         $this->link_to_base64($content);
 
-        return $this->renderer->get_html($content, '', $customcss);
+        return $this->renderer->get_html($content, '');
     }
 
     public function get_variant() {
@@ -130,9 +140,60 @@ CSS;
 
     public function get_first_page() {
         $content = <<<HTML
-    <div>{$this->settings->headerbodypage_editor['text']}</div>
-    <h1 align="center">{$this->get_variant()}</h1>
-    <div>{$this->settings->footerbodypage_editor['text']}</div>
+<table class="debug">
+<tbody>
+<tr>
+    <td>{$this->settings->headerbodypage_editor['text']}</td>
+</tr>   
+<tr>
+    <td style="text-align: center; padding-top: 24px; padding-bottom: 24px"><strong><span class="" style="font-size: xx-large;">{$this->get_variant()}</span></strong></td>
+</tr>
+<tr>
+    <td>{$this->settings->footerbodypage_editor['text']}</td>
+</tr>
+</tbody>
+</table>
+HTML;
+
+        $this->link_to_base64($content);
+
+        return $this->renderer->get_html($content);
+    }
+
+    public function get_font_size_page() {
+        $content = <<<HTML
+    <table class="debug">
+        <tbody>
+            <tr>
+                <td><span>обычный текст</span></td>
+                <td><span style="font-size: xx-small;">x-small (7,5pt)</span></td>
+            </tr>
+            <tr>
+                <td><span>обычный текст</span></td>
+                <td><span style="font-size: x-small;">x-small (7,5pt)</span></td>
+            </tr>
+            <tr>
+                <td><span>обычный текст</span></td>
+                <td><span style="font-size: small;">small (10pt)</span></td>
+            </tr>
+            <tr>
+                <td><span>обычный текст</span></td>
+                <td><span style="font-size: medium;">medium (12pt)</span></td>
+            </tr>
+            <tr>
+                <td><span>обычный текст</span></td>
+                <td><span style="font-size: large;">large (13,5pt)</span></td>
+            </tr>
+            <tr>
+                <td><span>обычный текст</span></td>
+                <td><span style="font-size: x-large;">x-large (16pt)</span></td>
+            </tr>
+            <tr>
+                <td><span>обычный текст</span></td>
+                <td><span style="font-size: xx-large;">xx-large (24pt)</span></td>
+            </tr>
+        </tbody>
+    </table>
 HTML;
 
         $this->link_to_base64($content);
@@ -172,76 +233,7 @@ HTML;
 
         $this->link_to_base64($output);
 
-        $customcss = <<<CSS
-table.debug tbody tr > th,
-table.debug tbody tr > td {
-    border: 1px dotted black;
-}
-
-table.questions tbody tr > th {
-    width: 48px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    vertical-align: top;
-}
-
-table.questions tbody tr > td {
-    padding-top: 8px;
-    padding-bottom: 8px;
-    padding-left: 8px;
-}
-
-table.questions tbody tr > td .qtext > p,
-table.questions tbody tr > td .rightanswer > p,
-table.questions tbody tr > td .multichoice .answer > div > div p {
-    margin: 0!important;
-    padding: 0!important;
-}
-
-table.questions tbody tr > td .multichoice .answer > div {
-    counter-increment: section;
-}
-
-table.questions tbody tr > td .multichoice .answer > div::before {
-    content: counter(section) ". ";
-    padding-left: 32px;
-    padding-right: 8px;
-}
-
-table.questions tbody tr > td .multichoice .answer > div,
-.d-flex {
-    display: -webkit-box;
-    display: flex;
-}
-
-table.questions tbody tr > td .multichoice .answer > div > *,
-.d-flex > * {
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-    flex: 1;
-}
-
-table.questions tbody tr > td .multichoice .answer > div > input,
-table.questions tbody tr > td .multichoice .answer > div .answernumber {
-    display: none!important;
-}
-
-.question-number {
-    display: block;
-    width: 48px;
-    padding-top: 4px;
-    padding-bottom: 4px;
-    font-size: 14pt;
-    line-height: 12pt;
-    border: 1px solid black;
-    font-weight: bold;
-    font-style: normal;
-    word-wrap: normal;
-}
-CSS;
-
-
-        return $this->renderer->get_html($output, '', $customcss);
+        return $this->renderer->get_html($output);
     }
 
     public function get_not_found_attempts(\quiz $quiz, &$number) {
@@ -292,8 +284,10 @@ CSS;
             'page-size' => 'A4',
         ]);
 
-        //echo $this->get_test_page();die;
+        //echo $header_content;die;
+        //echo $this->get_first_page();die;
 
+        $pdf->addPage($this->get_font_size_page());
         $pdf->addPage($this->get_first_page());
         $pdf->addPage($this->get_test_page());
 

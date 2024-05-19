@@ -54,7 +54,17 @@ class settings_renderer extends plugin_renderer_base {
 
         $context = $PAGE->context;
 
-        $output = '';
+        $output = <<<HTML
+<style> 
+.editor_atto_content {
+    font-family: times new roman,times,serif;;
+}
+.editor_atto_content p {
+    margin-top: 0!important;
+    margin-bottom: 0!important;
+}
+</style>
+HTML;
 
         $mform = new course_settings_form($PAGE->url->out_as_local_url(false), ['id' => $settings->get('id'), 'context' => $context, 'repeatno' => $settings->get_repeatno()]);
         $settings->set_form($mform);

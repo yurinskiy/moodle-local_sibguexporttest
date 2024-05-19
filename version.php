@@ -30,4 +30,6 @@ $plugin->incompatible = 401;
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = [
     'mod_quiz' => 2021051700,
+    'editor_atto' => 2021051700,
+    'atto_justify' => 2018041600,
 ];

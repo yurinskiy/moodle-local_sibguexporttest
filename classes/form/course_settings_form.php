@@ -5,19 +5,24 @@ namespace local_sibguexporttest\form;
 global $CFG;
 
 use context_user;
+use MoodleQuickForm;
 
 require_once($CFG->libdir . '/formslib.php');
 
 class course_settings_form extends \moodleform {
     protected function definition() {
+        global $CFG;
+
         $mform =& $this->_form;
         $repeatno = $this->_customdata['repeatno'];
 
         // Настройки страницы
         $mform->addElement('header', 'settingspage', get_string('settingspage', 'local_sibguexporttest'));
 
+        MoodleQuickForm::registerElementType('atto_editor', "$CFG->dirroot/local/sibguexporttest/classes/atto_editor_form_element.php", 'local_sibguexporttest_atto_editor_form_element');
+
         foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
-            $mform->addElement('editor', $field.'_editor', get_string($field, 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options());
+            $mform->addElement('atto_editor', $field.'_editor', get_string($field, 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options());
             $mform->setType($field.'_editor', PARAM_RAW);
         }
 
@@ -91,14 +96,27 @@ class course_settings_form extends \moodleform {
     {
         global $CFG;
 
+        $attobuttons = [
+            'undo' => 'undo',
+            'style1' => 'bold, italic',
+            'style2' => 'fontsize',
+            'style3' => 'indent',
+            'align' => 'align, justify',
+            'files' => 'image',
+            'other'=> 'clear, html'
+        ];
+
+        array_walk($attobuttons, fn (&$value, $key) => $value = $key . '=' . $value);
+
         return [
-            'maxfiles'  => 1,
+            'maxfiles'  => 5,
             'maxbytes'  => $CFG->maxbytes,
             'noclean'   => true,
             'context'   => $this->get_context(),
             'accepted_types' => 'web_image',
             'removeorphaneddrafts' => true,
             'enable_filemanagement' => true,
+            'atto:toolbar' => \implode(PHP_EOL, $attobuttons),
         ];
     }
 
