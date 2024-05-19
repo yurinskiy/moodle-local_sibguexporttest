@@ -21,7 +21,7 @@ class course_settings_form extends \moodleform {
 
         MoodleQuickForm::registerElementType('atto_editor', "$CFG->dirroot/local/sibguexporttest/classes/atto_editor_form_element.php", 'local_sibguexporttest_atto_editor_form_element');
 
-        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
+        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage', 'signmasterpage'] as $field) {
             $mform->addElement('atto_editor', $field.'_editor', get_string($field, 'local_sibguexporttest'), array('rows' => 5), $this->get_editor_options());
             $mform->setType($field.'_editor', PARAM_RAW);
         }

@@ -26,6 +26,7 @@ require_once(__DIR__ . '/../../config.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $userid = required_param('userid', PARAM_INT);
+$debug = optional_param('debug', false, PARAM_BOOL);
 //
 if (!$course = $DB->get_record('course', ['id' => $courseid])) {
     print_error('invalidcourseid');
@@ -41,7 +42,7 @@ $PAGE->set_url('/local/sibguexporttest/generate.php', ['courseid' => $courseid, 
 $renderer = $PAGE->get_renderer('local_sibguexporttest', 'generator');
 /** @var \local_sibguexporttest\output\question_renderer $qrenderer */
 $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
-$generator = new \local_sibguexporttest\generator($courseid, $userid, $renderer, $qrenderer);
+$generator = new \local_sibguexporttest\generator($courseid, $userid, $renderer, $qrenderer, $debug);
 
 $generator->generate();
 

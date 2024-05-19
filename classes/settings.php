@@ -101,6 +101,16 @@ class settings extends \core\persistent {
                 'type' => PARAM_INT,
                 'default' => FORMAT_HTML
             ],
+            'signmasterpage' => [
+                'type' => PARAM_RAW,
+                'null' => NULL_ALLOWED,
+                'default' => '',
+            ],
+            'signmasterpageformat' => [
+                'choices' => [FORMAT_HTML, FORMAT_MOODLE, FORMAT_PLAIN, FORMAT_MARKDOWN],
+                'type' => PARAM_INT,
+                'default' => FORMAT_HTML
+            ],
             'content' => [
                 'type' => PARAM_RAW,
             ]
@@ -121,7 +131,7 @@ class settings extends \core\persistent {
         $data->id = $this->get('id');
         $context = $mform->get_context();
 
-        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
+        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage', 'signmasterpage'] as $field) {
             $data = file_postupdate_standard_editor($data, $field, $mform->get_editor_options(), $context, 'local_sibguexporttest', $field, $data->id);
             unset($data->{$field.'_editor'});
             unset($data->{$field.'trust'});
@@ -170,7 +180,7 @@ class settings extends \core\persistent {
 
     protected function prepare_data($data, course_settings_form $mform) {
         $context = $mform->get_context();
-        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage'] as $field) {
+        foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage', 'signmasterpage'] as $field) {
             $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options(), $context, 'local_sibguexporttest', $field, $data->id);
         }
 

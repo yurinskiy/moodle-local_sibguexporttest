@@ -98,6 +98,31 @@ function xmldb_local_sibguexporttest_upgrade($oldversion): bool
         upgrade_plugin_savepoint(true, 2024041401, 'local', 'sibguexporttest');
     }
 
+    if ($oldversion < 2024051401) {
+
+        // Define field signmasterpage to be added to local_sibguexporttest.
+        $table = new xmldb_table('local_sibguexporttest');
+        $field = new xmldb_field('signmasterpage', XMLDB_TYPE_TEXT, null, null, null, null, null, 'footerbodypageformat');
+
+        // Conditionally launch add field signmasterpage.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field signmasterpageformat to be added to local_sibguexporttest.
+        $table = new xmldb_table('local_sibguexporttest');
+        $field = new xmldb_field('signmasterpageformat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'signmasterpage');
+
+        // Conditionally launch add field signmasterpageformat.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sibguexporttest savepoint reached.
+        upgrade_plugin_savepoint(true, 2024051401, 'local', 'sibguexporttest');
+    }
+
+
     // Everything has succeeded to here. Return true.
     return true;
 }

@@ -240,7 +240,7 @@ HTML;
 
     public function replace(string $value): string {
         $replace = [
-            'font-size: xx-small' => 'font-size: .75rem',
+            'font-size: xx-small' => 'font-size: .7rem',
             'font-size: x-small' => 'font-size: .8rem',
             'font-size: small' => 'font-size: .9rem',
             'font-size: medium' => 'font-size: 16pt',

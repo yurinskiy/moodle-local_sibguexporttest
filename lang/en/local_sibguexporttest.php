@@ -28,9 +28,10 @@ $string['navigation_generator'] = 'Генератор билетов';
 
 $string['settingspage'] = 'Настройки страницы';
 $string['headerpage'] = 'Верхний колонтитул';
-$string['footerpage'] = 'Верхний колонтитул';
+$string['footerpage'] = 'Нижний колонтитул';
 $string['headerbodypage'] = 'Титульная страница ДО номера варианта';
 $string['footerbodypage'] = 'Титульная страница ПОСЛЕ номера варианта';
+$string['signmasterpage'] = 'Подпись председателя предметной комиссии';
 
 $string['settingstest'] = 'Настройки тестов';
 $string['test_id'] = 'Выбранный тест';

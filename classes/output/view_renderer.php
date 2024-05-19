@@ -151,9 +151,12 @@ class view_renderer extends plugin_renderer_base {
                     $output .= html_writer::tag('td', '-', ['colspan' => 2]) . "\n";
                 }
             }
-
+            $actions = [];
             $url = new moodle_url('/local/sibguexporttest/generate.php', ['courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id]);
-            $output .= html_writer::tag('td', html_writer::link($url, 'Скачать')) . "\n";
+            $actions[] = html_writer::link($url, 'Скачать') . "\n";
+            $url = new moodle_url('/local/sibguexporttest/generate.php', ['courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id, 'debug' => true]);
+            $actions[] = html_writer::link($url, 'Отладочный файл');
+            $output .= html_writer::tag('td', \implode(PHP_EOL, $actions)) . "\n";
             $output .= html_writer::end_tag('tr') . "\n";
         }
 

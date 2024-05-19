@@ -14,6 +14,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 require_once($CFG->dirroot . '/lib/filelib.php');
 
 class generator {
+    public bool $debug;
     public int $userid;
     public \stdClass $settings;
     public generator_renderer $renderer;
@@ -25,7 +26,8 @@ class generator {
      * @param int $courseid
      * @param int $userid
      */
-    public function __construct(int $courseid, int $userid, generator_renderer $renderer, question_renderer $qrenderer) {
+    public function __construct(int $courseid, int $userid, generator_renderer $renderer, question_renderer $qrenderer, bool $debug = false) {
+        $this->debug = $debug;
         $this->userid = $userid;
         $this->settings = $this->get_settings($courseid);
         $this->renderer = $renderer;
@@ -40,9 +42,14 @@ class generator {
         return $settings->get_pdfdata();
     }
 
+    private function getDebugClass(): string
+    {
+        return $this->debug ? ' debug':'';
+    }
+
     public function get_header($body, $variant) {
         $content = <<<HTML
-<table class="debug">
+<table class="{$this->getDebugClass()}">
 <thead>
 <tr>
 <td>{$variant}</td>
@@ -111,7 +118,7 @@ CSS;
 
     public function get_footer($body) {
         $content = <<<HTML
-<table class="debug">
+<table class="{$this->getDebugClass()}">
 <tbody>
 <tr>
 <td>$body</td>
@@ -140,7 +147,7 @@ HTML;
 
     public function get_first_page() {
         $content = <<<HTML
-<table class="debug">
+<table class="{$this->getDebugClass()}">
 <tbody>
 <tr>
     <td>{$this->settings->headerbodypage_editor['text']}</td>
@@ -162,35 +169,42 @@ HTML;
 
     public function get_font_size_page() {
         $content = <<<HTML
-    <table class="debug">
+    <table class="{$this->getDebugClass()}">
         <tbody>
             <tr>
                 <td><span>обычный текст</span></td>
-                <td><span style="font-size: xx-small;">x-small (7,5pt)</span></td>
+                <td><span style="font-size: xx-small;">xx-small (7pt)</span></td>
+                <td><span style="font-size: xx-small;">.7rem</span></td>
             </tr>
             <tr>
                 <td><span>обычный текст</span></td>
                 <td><span style="font-size: x-small;">x-small (7,5pt)</span></td>
+                <td><span style="font-size: x-small;">.8rem</span></td>
             </tr>
             <tr>
                 <td><span>обычный текст</span></td>
                 <td><span style="font-size: small;">small (10pt)</span></td>
+                <td><span style="font-size: small;">.9rem</span></td>
             </tr>
             <tr>
                 <td><span>обычный текст</span></td>
                 <td><span style="font-size: medium;">medium (12pt)</span></td>
+                <td><span style="font-size: medium;">16pt</span></td>
             </tr>
             <tr>
                 <td><span>обычный текст</span></td>
                 <td><span style="font-size: large;">large (13,5pt)</span></td>
+                <td><span style="font-size: large;">1.25rem</span></td>
             </tr>
             <tr>
                 <td><span>обычный текст</span></td>
                 <td><span style="font-size: x-large;">x-large (16pt)</span></td>
+                <td><span style="font-size: x-large;">1.5rem</span></td>
             </tr>
             <tr>
                 <td><span>обычный текст</span></td>
                 <td><span style="font-size: xx-large;">xx-large (24pt)</span></td>
+                <td><span style="font-size: xx-large;">2rem</span></td>
             </tr>
         </tbody>
     </table>
@@ -203,7 +217,7 @@ HTML;
 
     public function get_test_page() {
 
-        $output = \html_writer::start_tag('table', ['class' => 'questions debug']);
+        $output = \html_writer::start_tag('table', ['class' => 'questions ' . $this->getDebugClass()]);
         $output .= \html_writer::start_tag('tbody');
         $questionno = 1;
 
@@ -228,6 +242,14 @@ HTML;
         }
 
 
+        $output .= \html_writer::end_tag('tbody');
+        $output .= \html_writer::end_tag('table');
+
+        $output .= \html_writer::start_tag('table', ['class' => $this->getDebugClass()]);
+        $output .= \html_writer::start_tag('tbody');
+        $output .= \html_writer::end_tag('tr');
+        $output .= \html_writer::tag('td', $this->settings->signmasterpage_editor['text'], ['style' => 'padding-top: 32px']);
+        $output .= \html_writer::start_tag('tr');
         $output .= \html_writer::end_tag('tbody');
         $output .= \html_writer::end_tag('table');
 
@@ -287,9 +309,12 @@ HTML;
         //echo $header_content;die;
         //echo $this->get_first_page();die;
 
-        $pdf->addPage($this->get_font_size_page());
         $pdf->addPage($this->get_first_page());
         $pdf->addPage($this->get_test_page());
+
+        if ($this->debug) {
+            $pdf->addPage($this->get_font_size_page());
+        }
 
         $content = $pdf->toString();
 
