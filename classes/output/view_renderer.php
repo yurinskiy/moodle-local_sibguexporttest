@@ -71,19 +71,21 @@ class view_renderer extends plugin_renderer_base {
     /**
      * @return string HTML to output.
      */
-    public function view(): string {
-        global $COURSE, $DB;
+    public function view($page = 0, $perpage = 25): string {
+        $output = $this->get_download_all();
+        $output .= $this->get_table($page, $perpage);
+        $output .= $this->get_paginator($page, $perpage);
 
-        $settings = settings::get_by_course($COURSE->id);
-        $contents = $settings->get_selected_quizzes();
+        return $output;
+    }
 
-        $users = $this->get_manager()->get_users('lastcourseaccess');
+    public function get_download_all(): string {
+        $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'all', 'courseid' => $this->baseurl->param('courseid')]);
+        $output = html_writer::start_tag('div', ['class' => 'py-2']);
+        $output .= html_writer::link($url, 'Скачать все билеты', ['class' => 'btn btn-primary']);
+        $output .= html_writer::end_tag('div');
 
-        $attempts = $DB->get_records('quiz_attempts', ['quiz' => current($contents), 'state' => 'finished'], 'id');
-        debug::dump($users);
-        debug::dd($attempts);
-
-        return 'hello';
+        return $output;
     }
 
     public function get_table($page = 0, $perpage = 25) {
@@ -152,9 +154,9 @@ class view_renderer extends plugin_renderer_base {
                 }
             }
             $actions = [];
-            $url = new moodle_url('/local/sibguexporttest/generate.php', ['courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id]);
+            $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'one', 'courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id]);
             $actions[] = html_writer::link($url, 'Скачать') . "\n";
-            $url = new moodle_url('/local/sibguexporttest/generate.php', ['courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id, 'debug' => true]);
+            $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'one', 'courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id, 'debug' => true]);
             $actions[] = html_writer::link($url, 'Отладочный файл');
             $output .= html_writer::tag('td', \implode(PHP_EOL, $actions)) . "\n";
             $output .= html_writer::end_tag('tr') . "\n";

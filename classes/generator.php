@@ -16,30 +16,37 @@ require_once($CFG->dirroot . '/lib/filelib.php');
 class generator {
     public bool $debug;
     public int $userid;
-    public \stdClass $settings;
+    public \stdClass $user;
+    public settings $settings;
+    public \stdClass $pdfdata;
     public generator_renderer $renderer;
     public question_renderer $qrenderer;
-
     public array $quizzes;
 
-    /**
-     * @param int $courseid
-     * @param int $userid
-     */
-    public function __construct(int $courseid, int $userid, generator_renderer $renderer, question_renderer $qrenderer, bool $debug = false) {
+    public string $session_id;
+    public ?string $variant;
+
+    public ?string $path;
+    public $content;
+    public ?string $error;
+
+    public function __construct(int $courseid, int $userid, generator_renderer $renderer, question_renderer $qrenderer, bool $debug = false, string $session_id = null) {
         $this->debug = $debug;
         $this->userid = $userid;
-        $this->settings = $this->get_settings($courseid);
+        $this->user = \core_user::get_user($this->userid);
+        $this->settings = settings::get_by_course($courseid);
+        $this->pdfdata = $this->settings->get_pdfdata();
+        $this->quizzes = $this->settings->get_selected_quizzes();
         $this->renderer = $renderer;
+        $this->session_id = $session_id ?? session_id();
         $this->qrenderer = $qrenderer;
-    }
 
-    private function get_settings($courseid) {
-        $settings = settings::get_by_course($courseid);
+        $this->variant = null;
+        $this->path = null;
+        $this->content = null;
+        $this->error = null;
 
-        $this->quizzes = $settings->get_selected_quizzes();
-
-        return $settings->get_pdfdata();
+        $this->generate();
     }
 
     private function getDebugClass(): string
@@ -80,7 +87,7 @@ CSS;
         // and also some potential PHP shutdown issues.
         \core\session\manager::write_close();
 
-        $cookies = 'MoodleSession'.$CFG->sessioncookie .'='.session_id(); // Add your cookies here
+        $cookies = 'MoodleSession'.$CFG->sessioncookie .'='.$this->session_id; // Add your cookies here
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -133,16 +140,20 @@ HTML;
     }
 
     public function get_variant() {
-        foreach ($this->settings->test_id as $quizid) {
-            $attempts = quiz_get_user_attempts($quizid, $this->userid, 'all', true);
-            $lastattempt = end($attempts);
+        if (!$this->variant) {
+            foreach ($this->quizzes as $quizid) {
+                $attempts = quiz_get_user_attempts($quizid, $this->userid, 'all', true);
+                $lastattempt = end($attempts);
 
-            if ($lastattempt) {
-                $variants[] = $lastattempt->id;
+                if ($lastattempt) {
+                    $variants[] = $lastattempt->id;
+                }
             }
+
+            $this->variant = \implode('-', $variants ?? []);
         }
 
-        return 'Вариант ' . \implode('-', $variants ?? []);
+        return 'Вариант ' . $this->variant;
     }
 
     public function get_first_page() {
@@ -150,13 +161,13 @@ HTML;
 <table class="{$this->getDebugClass()}">
 <tbody>
 <tr>
-    <td>{$this->settings->headerbodypage_editor['text']}</td>
+    <td>{$this->pdfdata->headerbodypage_editor['text']}</td>
 </tr>   
 <tr>
     <td style="text-align: center; padding-top: 24px; padding-bottom: 24px"><strong><span class="" style="font-size: xx-large;">{$this->get_variant()}</span></strong></td>
 </tr>
 <tr>
-    <td>{$this->settings->footerbodypage_editor['text']}</td>
+    <td>{$this->pdfdata->footerbodypage_editor['text']}</td>
 </tr>
 </tbody>
 </table>
@@ -232,6 +243,8 @@ HTML;
                 continue;
             }
 
+            $variants[] = $lastattempt->id;
+
             $attempt = \quiz_attempt::create($lastattempt->id);
             $slots = $attempt->get_slots();
             foreach ($slots as $slot) {
@@ -241,6 +254,7 @@ HTML;
             }
         }
 
+        $this->variant = \implode('-', $variants ?? []);
 
         $output .= \html_writer::end_tag('tbody');
         $output .= \html_writer::end_tag('table');
@@ -248,7 +262,7 @@ HTML;
         $output .= \html_writer::start_tag('table', ['class' => $this->getDebugClass()]);
         $output .= \html_writer::start_tag('tbody');
         $output .= \html_writer::end_tag('tr');
-        $output .= \html_writer::tag('td', $this->settings->signmasterpage_editor['text'], ['style' => 'padding-top: 32px']);
+        $output .= \html_writer::tag('td', $this->pdfdata->signmasterpage_editor['text'], ['style' => 'padding-top: 32px']);
         $output .= \html_writer::start_tag('tr');
         $output .= \html_writer::end_tag('tbody');
         $output .= \html_writer::end_tag('table');
@@ -291,9 +305,9 @@ HTML;
         return $content;
     }
 
-    public function generate() {
-        $header_content = $this->get_header($this->settings->headerpage_editor['text'], $this->get_variant());
-        $footer_content = $this->get_footer($this->settings->footerpage_editor['text']);
+    private function generate() {
+        $header_content = $this->get_header($this->pdfdata->headerpage_editor['text'], $this->get_variant());
+        $footer_content = $this->get_footer($this->pdfdata->footerpage_editor['text']);
 
         $pdf = new Pdf([
             'encoding' => 'UTF-8',
@@ -306,23 +320,56 @@ HTML;
             'page-size' => 'A4',
         ]);
 
-        //echo $header_content;die;
-        //echo $this->get_first_page();die;
+        $test_page = $this->get_test_page();
+        $first_page = $this->get_first_page();
 
-        $pdf->addPage($this->get_first_page());
-        $pdf->addPage($this->get_test_page());
+        $pdf->addPage($first_page);
+        $pdf->addPage($test_page);
 
         if ($this->debug) {
             $pdf->addPage($this->get_font_size_page());
         }
 
-        $content = $pdf->toString();
+        $this->path = $pdf->getPdfFilename();
+        $this->content = $pdf->toString();
+        $this->error = $pdf->getError();
+    }
 
-        if ($errors = $pdf->getError()) {
-            debug::dd($errors);
+    public function get_pdf_response() {
+        if ($this->error) {
+            debug::dd($this->error);
         }
 
         header('Content-Type: application/pdf');
-        echo $content;
+        header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+        header('Content-Disposition: inline; filename="' . rawurlencode($this->get_filename()) . '"; ' .
+            'filename*=UTF-8\'\'' . rawurlencode($this->get_filename()));
+        echo $this->content;
+    }
+
+    public function get_filename(): string
+    {
+        return \sprintf("%s %s - %s - %s.pdf", $this->user->lastname, $this->user->firstname, $this->user->username, $this->get_variant());
+    }
+
+    public function get_content(): string
+    {
+        return $this->content;
+    }
+
+    public function get_error(): string
+    {
+        return $this->error;
+    }
+
+    public function get_path_file(): ?string
+    {
+        $this->generate();
+
+        if ($this->error) {
+            return null;
+        }
+
+        return $this->path;
     }
 }

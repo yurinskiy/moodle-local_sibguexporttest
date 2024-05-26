@@ -1,0 +1,130 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * @package   local_sibguexporttest
+ * @copyright 2024, Yuriy Yurinskiy <yuriyyurinskiy@yandex.ru>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace local_sibguexporttest\task;
+
+global $CFG;
+
+require_once($CFG->libdir . '/filestorage/zip_archive.php');
+
+use local_sibguexporttest\debug;
+use zip_archive;
+
+class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
+
+    public static function instance(
+        int $courseid,
+        array $userids
+    ): self {
+        $task = new self();
+        $task->set_custom_data((object) [
+            'courseid' => $courseid,
+            'userids' => $userids,
+            'session_id' => session_id(),
+        ]);
+
+        return $task;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function get_name() {
+        return 'Генерация zip-архива выгрузки';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function execute() {
+        global $DB, $PAGE;
+        mtrace("My task started");
+
+        /** @var \local_sibguexporttest\output\generator_renderer $renderer */
+        $renderer = $PAGE->get_renderer('local_sibguexporttest', 'generator');
+        /** @var \local_sibguexporttest\output\question_renderer $qrenderer */
+        $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
+
+
+        $data = $this->get_custom_data();
+        $courseid = $data->courseid;
+        mtrace($courseid);
+
+        $course = $DB->get_record('course', ['id' => $courseid]);
+        $user =\core_user::get_user($this->get_userid());
+
+        $zippath = tempnam(sys_get_temp_dir(), 'local_sibguexporttest');
+        $ziparchive = new zip_archive();
+        if ($ziparchive->open($zippath, \file_archive::CREATE)) {
+            $ziparchive->add_file_from_string('README.txt', 'Сформирована выгрузка по курсу "' . $course->shortname . '" от ' . date('Y.m.d H:i:s'));
+
+            foreach ($data->userids as $userid) {
+                $generator = new \local_sibguexporttest\generator($courseid, $userid, $renderer, $qrenderer, false, $data->session_id ?? null);
+                $ziparchive->add_file_from_string($generator->get_filename(), $generator->get_content());
+            }
+            $ziparchive->close();
+        } else {
+            throw new \moodle_exception('error open file ' . $zippath);
+        }
+
+        \core\session\manager::terminate_current();
+
+        // You probably don't need attachments but if you do, here is how to add one
+        $usercontext = \context_user::instance($user->id);
+        $file = new \stdClass();
+        $file->contextid = $usercontext->id;
+        $file->component = 'local_sibguexporttest';
+        $file->filearea = 'task_adhoc';
+        $file->itemid = $this->get_id();
+        $file->filepath = '/';
+        $file->filename = $course->shortname . ' - ' . date('Y.m.d') . '.zip';
+        $file->source = 'local_sibguexporttest';
+
+        $fs = get_file_storage();
+        if ($stored_file = $fs->get_file($file->contextid, $file->component, $file->filearea, $file->itemid, $file->filepath, $file->filename)) {
+            $stored_file->delete();
+        }
+        $file = $fs->create_file_from_pathname($file, $zippath);
+
+        $message = new \core\message\message();
+        $message->component = 'local_sibguexporttest'; // Your plugin's name
+        $message->name = 'sibguexporttest_notification'; // Your notification name from message.php
+        $message->userfrom = \core_user::get_noreply_user();
+        $message->userto = $user;
+        $message->subject = $course->shortname . ' - ' . date('Y.m.d');
+        $message->fullmessage = 'Zip-архив выгрузки сформирован.';
+        $message->fullmessageformat = FORMAT_MARKDOWN;
+        $message->fullmessagehtml = '<p>Zip-архив выгрузки сформирован.</p>';
+        $message->smallmessage = 'Сформировано';
+        $message->notification = 1; // Because this is a notification generated from Moodle, not a user-to-user message
+        $message->contexturl = \moodle_url::make_pluginfile_url($file->get_contextid(), $file->get_component(), $file->get_filearea(), $file->get_itemid()?:null, $file->get_filepath(), $file->get_filename());; // A relevant URL for the notification
+        $message->contexturlname = 'Скачать прикрепленный файл'; // Link title explaining where users get to for the contexturl
+        $message->attachment = $file;
+
+
+        // Actually send the message
+        $messageid = message_send($message);
+        mtrace('Send message #' . $messageid);
+
+        mtrace("My task finished");
+    }
+}

@@ -20,16 +20,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_sibguexporttest';
-$plugin->version = 2024051402;
-$plugin->requires = 2021051700.00;
-$plugin->supported = [311, 400];
-$plugin->incompatible = 401;
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->dependencies = [
-    'mod_quiz' => 2021051700,
-    'editor_atto' => 2021051700,
-    'atto_justify' => 2018041600,
+$messageproviders = [
+    'sibguexporttest_notification' => [],
 ];

@@ -60,8 +60,7 @@ switch ($action) {
         $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
         $render->init_baseurl($PAGE->url);
         $render->init_manager();
-        $output = $render->get_table($page, $perpage);
-        $output .= $render->get_paginator($page, $perpage);
+        $output = $render->view($page, $perpage);
         break;
     default:
         $title = get_string('navigation_view', 'local_sibguexporttest');

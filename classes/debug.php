@@ -24,6 +24,9 @@ namespace local_sibguexporttest;
 defined('MOODLE_INTERNAL') || die();
 
 class debug {
+    protected ?float $time = null;
+    protected ?int $memory = null;
+
     public static function dump(...$vars)
     {
         if (!\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true) && !headers_sent()) {
@@ -60,5 +63,44 @@ class debug {
         ob_end_clean();
 
         return '<pre>'.htmlspecialchars($o).'</pre>';
+    }
+
+    public function time(): void
+    {
+        self::dump($this->getTime());
+    }
+    public function memory(): void
+    {
+        self::dump($this->getMemory());
+    }
+
+    protected function getTime(): float
+    {
+        if (!$this->time) {
+            $this->time = microtime(true);
+
+            return $this->time;
+        } else {
+            $now = microtime(true);
+            $time = $now - $this->time;
+            $this->time = $now;
+
+            return $time;
+        }
+    }
+
+    protected function getMemory(): int
+    {
+        if (!$this->memory) {
+            $this->memory = memory_get_usage();
+
+            return $this->memory;
+        } else {
+            $now = memory_get_usage();
+            $memory = $now - $this->memory;
+            $this->memory = $now;
+
+            return $memory;
+        }
     }
 }

@@ -117,3 +117,43 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
     );
     $mainnode->add_node($node);
 }
+
+function local_sibguexporttest_pluginfile(
+    $course,
+    $cm,
+    $context,
+    string $filearea,
+    array $args,
+    bool $forcedownload,
+    array $options = []
+) {
+    global $CFG;
+
+    // Check the contextlevel is as expected - if your plugin is a block, this becomes CONTEXT_BLOCK, etc.
+    if ($context->contextlevel != CONTEXT_USER) {
+        return false;
+    }
+
+    // Make sure the filearea is one of those used by the plugin.
+    if ($filearea !== 'task_adhoc') {
+        return false;
+    }
+
+    $itemid = array_shift($args);
+    $filename = array_pop($args); // The last item in the $args array.
+    if (empty($args)) {
+        // $args is empty => the path is '/'.
+        $filepath = '/';
+    } else {
+        // $args contains the remaining elements of the filepath.
+        $filepath = '/' . implode('/', $args) . '/';
+    }
+
+    $fs = get_file_storage();
+    $file = $fs->get_file($context->id, 'local_sibguexporttest', $filearea, $itemid, $filepath, $filename);
+    if (!$file) {
+        send_file_not_found();
+    }
+
+    send_stored_file($file, 0, 0, $forcedownload, $options);
+}

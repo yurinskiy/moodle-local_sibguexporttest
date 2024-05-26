@@ -21,6 +21,8 @@
  */
 
 $string['pluginname'] = 'Генерация билетов вступительных испытаний';
+$string['messageprovider:sibguexporttest_notification'] = 'Уведомления о выгрузке билетов по курсу';
+
 $string['navigation_main'] = 'Создание билета ВИ';
 $string['navigation_view'] = 'Скачать билеты ВИ';
 $string['navigation_settings'] = 'Настройка билета ВИ';
