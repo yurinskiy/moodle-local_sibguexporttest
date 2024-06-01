@@ -91,8 +91,6 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
                 throw new \moodle_exception('error open file ' . $zippath);
             }
 
-            \core\session\manager::terminate_current();
-
             // You probably don't need attachments but if you do, here is how to add one
             $usercontext = \context_user::instance($user->id);
             $file = new \stdClass();
