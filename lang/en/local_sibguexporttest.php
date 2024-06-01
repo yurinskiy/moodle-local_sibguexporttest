@@ -25,6 +25,7 @@ $string['messageprovider:sibguexporttest_notification'] = 'Уведомлени�
 
 $string['navigation_main'] = 'Создание билета ВИ';
 $string['navigation_view'] = 'Скачать билеты ВИ';
+$string['navigation_task'] = 'История заданий';
 $string['navigation_settings'] = 'Настройка билета ВИ';
 $string['navigation_generator'] = 'Генератор билетов';
 

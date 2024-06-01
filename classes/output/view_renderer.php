@@ -80,9 +80,12 @@ class view_renderer extends plugin_renderer_base {
     }
 
     public function get_download_all(): string {
-        $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'all', 'courseid' => $this->baseurl->param('courseid')]);
         $output = html_writer::start_tag('div', ['class' => 'py-2']);
+        $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'all', 'courseid' => $this->baseurl->param('courseid')]);
         $output .= html_writer::link($url, 'Скачать все билеты', ['class' => 'btn btn-primary']);
+
+        $url = new moodle_url('/local/sibguexporttest/index.php', ['action' => 'task', 'courseid' => $this->baseurl->param('courseid')]);
+        $output .= html_writer::link($url, 'История заданий', ['class' => 'btn btn-primary ml-2']);
         $output .= html_writer::end_tag('div');
 
         return $output;

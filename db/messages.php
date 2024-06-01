@@ -24,5 +24,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $messageproviders = [
-    'sibguexporttest_notification' => [],
+    'sibguexporttest_notification' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_LOGGEDIN + MESSAGE_DEFAULT_LOGGEDOFF,
+        ]
+    ],
 ];

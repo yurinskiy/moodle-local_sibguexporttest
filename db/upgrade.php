@@ -122,6 +122,57 @@ function xmldb_local_sibguexporttest_upgrade($oldversion): bool
         upgrade_plugin_savepoint(true, 2024051401, 'local', 'sibguexporttest');
     }
 
+    if ($oldversion < 2024051405) {
+
+        // Define table local_sibguexporttest_export to be created.
+        $table = new xmldb_table('local_sibguexporttest_export');
+
+        // Adding fields to table local_sibguexporttest_export.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, 'new');
+        $table->add_field('description', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('userids', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table local_sibguexporttest_export.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('usermodified', XMLDB_KEY_FOREIGN, ['usermodified'], 'user', ['id']);
+
+        // Conditionally launch create table for local_sibguexporttest_export.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sibguexporttest savepoint reached.
+        upgrade_plugin_savepoint(true, 2024051405, 'local', 'sibguexporttest');
+    }
+
+    if ($oldversion < 2024051406) {
+
+        // Define field id to be added to local_sibguexporttest_export.
+        $table = new xmldb_table('local_sibguexporttest_export');
+        $field = new xmldb_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'timemodified');
+
+        // Conditionally launch add field id.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $key = new xmldb_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        // Launch add key userid.
+        $dbman->add_key($table, $key);
+
+        $key = new xmldb_key('courseid', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+        // Launch add key courseid.
+        $dbman->add_key($table, $key);
+
+        // Sibguexporttest savepoint reached.
+        upgrade_plugin_savepoint(true, 2024051406, 'local', 'sibguexporttest');
+    }
+
 
     // Everything has succeeded to here. Return true.
     return true;

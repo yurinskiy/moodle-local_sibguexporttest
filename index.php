@@ -62,10 +62,16 @@ switch ($action) {
         $render->init_manager();
         $output = $render->view($page, $perpage);
         break;
+    case 'task':
+        $title = get_string('navigation_task', 'local_sibguexporttest');
+        /** @var \local_sibguexporttest\output\view_renderer $render */
+        $render = $PAGE->get_renderer('local_sibguexporttest', 'task');
+        $render->init_baseurl($PAGE->url);
+        $output = $render->view($page, $perpage);
+        break;
     default:
-        $title = get_string('navigation_view', 'local_sibguexporttest');
-        $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
-        $output = $render->view();
+        $title = 'В разработке...';
+        $output = '';
         break;
 }
 

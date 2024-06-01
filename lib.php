@@ -43,6 +43,8 @@ if (!function_exists('dd')) {
 }
 
 function local_sibguexporttest_extend_settings_navigation(settings_navigation $settingsnav, context $context) {
+    global $COURSE;
+
     if ($context->contextlevel !== CONTEXT_COURSE) {
         return;
     }
@@ -51,8 +53,6 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
     if (!$addnode) {
         return;
     }
-
-    $id = $context->instanceid;
 
     $coursereportsnode = $settingsnav->find('coursereports', navigation_node::TYPE_CONTAINER);
     if (!$coursereportsnode) {
@@ -74,7 +74,7 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
 
     //Скачать билеты ВИ
     $urltext = get_string('navigation_view', 'local_sibguexporttest');
-    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $id, 'action' => 'view']);
+    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'view']);
     $node = $coursereportsnode->create(
         $urltext,
         $url,
@@ -84,7 +84,7 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
         new pix_icon('i/report', $urltext)
     );
     $mainnode->add_node($node);
-
+    local_sibguexporttest_task_node($node, $context);
 
     $addnode = is_siteadmin() || has_capability('local/sibguexporttest:manager', $context);
     if (!$addnode) {
@@ -93,7 +93,7 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
 
     // Настройка билета ВИ
     $urltext = get_string('navigation_settings', 'local_sibguexporttest');
-    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $id, 'action' => 'settings']);
+    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'settings']);
     $node = $coursereportsnode->create(
         $urltext,
         $url,
@@ -106,7 +106,7 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
 
     // Генератор билетов
     $urltext = get_string('navigation_generator', 'local_sibguexporttest');
-    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $id, 'action' => 'generate']);
+    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'generate']);
     $node = $coursereportsnode->create(
         $urltext,
         $url,
@@ -116,6 +116,28 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
         new pix_icon('i/report', $urltext)
     );
     $mainnode->add_node($node);
+}
+
+function local_sibguexporttest_task_node(navigation_node $node, context $context) {
+    global $PAGE, $COURSE;
+
+    $urltext = get_string('navigation_task', 'local_sibguexporttest');
+    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'task']);
+    if (!$PAGE->url->compare($url, URL_MATCH_PARAMS)) {
+        return;
+    }
+
+    $addnode = $node->create(
+        $urltext,
+        $url,
+        navigation_node::NODETYPE_LEAF,
+        null,
+        'sibguexporttest_task',
+        new pix_icon('i/report', $urltext)
+    );
+    $addnode->make_active();
+    $addnode->hidden = true;
+    $node->add_node($addnode);
 }
 
 function local_sibguexporttest_pluginfile(
@@ -135,7 +157,7 @@ function local_sibguexporttest_pluginfile(
     }
 
     // Make sure the filearea is one of those used by the plugin.
-    if ($filearea !== 'task_adhoc') {
+    if ($filearea !== 'local_sibguexporttest_export') {
         return false;
     }
 
