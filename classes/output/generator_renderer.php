@@ -99,16 +99,9 @@ CSS;
         $pageBreak = <<<CSS
 table {
     border-collapse: collapse; 
-}
-table tr, table td, table th {
     page-break-inside: avoid !important;
-    break-inside: avoid-page !important; 
 }
-.page-break {
-  height: 20px;
-  page-break-before: always; 
-  break-before: page;
-}
+
 CSS;
 
         $defaultCss = <<<CSS

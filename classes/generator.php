@@ -228,8 +228,7 @@ HTML;
 
     public function get_test_page() {
 
-        $output = \html_writer::start_tag('table', ['class' => 'questions ' . $this->getDebugClass()]);
-        $output .= \html_writer::start_tag('tbody');
+        $output = '';
         $questionno = 1;
 
         foreach ($this->quizzes as $quizid) {
@@ -239,7 +238,9 @@ HTML;
 
             $lastattempt = end($attempts);
             if (!$lastattempt) {
+                $output .=  \html_writer::start_tag('table', ['class' => 'questions ' . $this->getDebugClass()]);
                 $output .= $this->get_not_found_attempts($quiz, $questionno);
+                $output .= \html_writer::end_tag('table');
                 continue;
             }
 
@@ -248,7 +249,9 @@ HTML;
             $attempt = \quiz_attempt::create($lastattempt->id);
             $slots = $attempt->get_slots();
             foreach ($slots as $slot) {
+                $output .=  \html_writer::start_tag('table', ['class' => 'questions ' . $this->getDebugClass()]);
                 $output .= $this->print_question($attempt, $questionno, $slot);
+                $output .= \html_writer::end_tag('table');
 
                 $questionno++;
             }
@@ -256,15 +259,10 @@ HTML;
 
         $this->variant = \implode('-', $variants ?? []);
 
-        $output .= \html_writer::end_tag('tbody');
-        $output .= \html_writer::end_tag('table');
-
         $output .= \html_writer::start_tag('table', ['class' => $this->getDebugClass()]);
-        $output .= \html_writer::start_tag('tbody');
         $output .= \html_writer::end_tag('tr');
         $output .= \html_writer::tag('td', $this->pdfdata->signmasterpage_editor['text'], ['style' => 'padding-top: 32px']);
         $output .= \html_writer::start_tag('tr');
-        $output .= \html_writer::end_tag('tbody');
         $output .= \html_writer::end_tag('table');
 
         $this->link_to_base64($output);
@@ -313,11 +311,10 @@ HTML;
             'encoding' => 'UTF-8',
             'header-html' => new File($header_content, '.html'),
             'header-line',
-            'header-spacing' => 5,
             'footer-html' => new File($footer_content, '.html'),
             'footer-line',
-            'footer-spacing' => 5,
             'page-size' => 'A4',
+            'print-media-type',
         ]);
 
         $test_page = $this->get_test_page();
