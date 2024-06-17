@@ -30,8 +30,6 @@ $action = optional_param('action', 'view',PARAM_TEXT);
 $page = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 25, PARAM_INT);
 
-$PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action]);
-
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('invalidcourseid');
 }
@@ -50,19 +48,32 @@ if (!is_siteadmin() && !has_capability('local/sibguexporttest:view', $context)) 
 
 switch ($action) {
     case 'settings':
+        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action]);
+
         $title = get_string('navigation_settings', 'local_sibguexporttest');
         $render = $PAGE->get_renderer('local_sibguexporttest', 'settings');
         $output = $render->view();
         break;
     case 'view':
+        # filters
+        $group = optional_param('group', '', PARAM_INT);
+        $sort = optional_param('sort', 'lastcourseaccess', PARAM_ALPHAEXT);
+        $direction = optional_param('dir', 'ASC', PARAM_ALPHAEXT);
+        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action, 'group' => $group, 'sort' => $sort, 'dir' => $direction]);
+
+        $menu = $PAGE->settingsnav->find('sibguexporttest_download', navigation_node::NODETYPE_LEAF);
+        $menu->make_active();
+
         $title = get_string('navigation_view', 'local_sibguexporttest');
         /** @var \local_sibguexporttest\output\view_renderer $render */
         $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
         $render->init_baseurl($PAGE->url);
         $render->init_manager();
-        $output = $render->view($page, $perpage);
+        $output = $render->view(['group' => $group], $sort, $direction, $page, $perpage);
         break;
     case 'task':
+        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action]);
+
         $title = get_string('navigation_task', 'local_sibguexporttest');
         /** @var \local_sibguexporttest\output\view_renderer $render */
         $render = $PAGE->get_renderer('local_sibguexporttest', 'task');
@@ -70,6 +81,7 @@ switch ($action) {
         $output = $render->view($page, $perpage);
         break;
     default:
+        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action]);
         $title = 'В разработке...';
         $output = '';
         break;

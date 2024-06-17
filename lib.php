@@ -84,7 +84,19 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
         new pix_icon('i/report', $urltext)
     );
     $mainnode->add_node($node);
-    local_sibguexporttest_task_node($node, $context);
+
+    // История заданий
+    $urltext = get_string('navigation_task', 'local_sibguexporttest');
+    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'task']);
+    $node = $coursereportsnode->create(
+        $urltext,
+        $url,
+        navigation_node::NODETYPE_LEAF,
+        null,
+        'sibguexporttest_task',
+        new pix_icon('i/report', $urltext)
+    );
+    $mainnode->add_node($node);
 
     $addnode = is_siteadmin() || has_capability('local/sibguexporttest:manager', $context);
     if (!$addnode) {
@@ -116,28 +128,6 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
         new pix_icon('i/report', $urltext)
     );
     $mainnode->add_node($node);
-}
-
-function local_sibguexporttest_task_node(navigation_node $node, context $context) {
-    global $PAGE, $COURSE;
-
-    $urltext = get_string('navigation_task', 'local_sibguexporttest');
-    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'task']);
-    if (!$PAGE->url->compare($url, URL_MATCH_PARAMS)) {
-        return;
-    }
-
-    $addnode = $node->create(
-        $urltext,
-        $url,
-        navigation_node::NODETYPE_LEAF,
-        null,
-        'sibguexporttest_task',
-        new pix_icon('i/report', $urltext)
-    );
-    $addnode->make_active();
-    $addnode->hidden = true;
-    $node->add_node($addnode);
 }
 
 function local_sibguexporttest_pluginfile(
