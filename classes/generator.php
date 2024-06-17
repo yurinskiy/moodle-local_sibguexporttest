@@ -54,18 +54,22 @@ class generator {
         return $this->debug ? ' debug':'';
     }
 
-    public function get_header($body, $variant) {
+    public function get_header($body) {
+        $variant = $this->get_variant();
+        $username = $this->user->username;
+
         $content = <<<HTML
 <table class="{$this->getDebugClass()}">
 <thead>
 <tr>
-<td>{$variant}</td>
-<td><span class="page"></span> / <span class="topage"></span></td>
+<td style="width: 33.33%;">{$variant}</td>
+<td style="width: 33.33%; text-align: center">{$username}</td>
+<td style="width: 33.33%;"><span class="page"></span> / <span class="topage"></span></td>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td colspan="2">{$body}</td>
+<td colspan="3">{$body}</td>
 </tr>
 </tbody></table>
 HTML;
@@ -304,7 +308,7 @@ HTML;
     }
 
     private function generate() {
-        $header_content = $this->get_header($this->pdfdata->headerpage_editor['text'], $this->get_variant());
+        $header_content = $this->get_header($this->pdfdata->headerpage_editor['text']);
         $footer_content = $this->get_footer($this->pdfdata->footerpage_editor['text']);
 
         $pdf = new Pdf([
