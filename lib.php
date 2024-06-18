@@ -81,7 +81,7 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
         navigation_node::NODETYPE_LEAF,
         null,
         'sibguexporttest_download',
-        new pix_icon('i/report', $urltext)
+        new pix_icon('a/download_all', $urltext, 'core')
     );
     $mainnode->add_node($node);
 
@@ -94,7 +94,7 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
         navigation_node::NODETYPE_LEAF,
         null,
         'sibguexporttest_task',
-        new pix_icon('i/report', $urltext)
+        new pix_icon('i/backup', $urltext, 'core')
     );
     $mainnode->add_node($node);
 
@@ -125,7 +125,7 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
         navigation_node::NODETYPE_LEAF,
         null,
         'sibguexporttest_generator',
-        new pix_icon('i/report', $urltext)
+        new pix_icon('i/permissions', $urltext, 'core')
     );
     $mainnode->add_node($node);
 }

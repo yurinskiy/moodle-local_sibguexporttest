@@ -22,12 +22,14 @@
 
 $string['pluginname'] = 'Генерация билетов вступительных испытаний';
 $string['messageprovider:sibguexporttest_notification'] = 'Уведомления о выгрузке билетов по курсу';
+$string['sibguexporttest:manager'] = 'Настройка билета ВИ';
+$string['sibguexporttest:view'] = 'Просмотр билетов ВИ';
 
 $string['navigation_main'] = 'Создание билета ВИ';
 $string['navigation_view'] = 'Скачать билеты ВИ';
 $string['navigation_task'] = 'История заданий';
 $string['navigation_settings'] = 'Настройка билета ВИ';
-$string['navigation_generator'] = 'Генератор билетов';
+$string['navigation_generator'] = 'Генератор тестовых билетов';
 
 $string['settingspage'] = 'Настройки страницы';
 $string['headerpage'] = 'Верхний колонтитул';
@@ -41,7 +43,8 @@ $string['test_id'] = 'Выбранный тест';
 $string['test_id-error_not_found'] = 'Выбранный тест не существует';
 $string['test_id-error_exists'] = 'Тест "{$a}" уже используется';
 $string['test_id-error_max'] = 'Выбрано максимальное количество тестов, удалите лишние варианты';
-$string['test_order'] = 'Порядок теста';
+$string['test_order'] = 'Порядок следования теста';
 $string['test_delete'] = 'Удалить тест';
+$string['test_addstring'] = 'Добавить тест в форму';
 
 $string['test_not_start'] = 'Абитуриент не совершил запуск тестового задания "{$a->name}", на основе попытки прохождения которого формируются вопросы № {$a->from} - {$a->to}';

@@ -49,7 +49,7 @@ class course_settings_form extends \moodleform {
             'test_repeats',
             'test_add_fields',
             1,
-            null,
+            get_string('test_addstring', 'local_sibguexporttest'),
             true,
             'test_delete',
         );
