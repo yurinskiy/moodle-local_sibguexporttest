@@ -105,7 +105,7 @@ class task_renderer extends plugin_renderer_base {
             $output .= html_writer::tag('th', $task->get('id')) . "\n";
             $output .= html_writer::tag('td', $task->get('status')) . "\n";
             $output .= html_writer::tag('td', userdate($task->get('timecreated'))) . "\n";
-            $output .= html_writer::tag('td', $task->get('timemodified') !== $task->get('timecreated') ? userdate($task->get('timemodified')): '-') . "\n";
+            $output .= html_writer::tag('td', $task->get('status') !== 'new' ? userdate($task->get('timemodified')): '-') . "\n";
 
             $actions = [];
             $data = json_decode($task->get('description'), JSON_OBJECT_AS_ARRAY);
