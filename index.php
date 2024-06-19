@@ -59,7 +59,7 @@ switch ($action) {
         $group = optional_param('group', '', PARAM_INT);
         $sort = optional_param('sort', 'lastcourseaccess', PARAM_ALPHAEXT);
         $direction = optional_param('dir', 'ASC', PARAM_ALPHAEXT);
-        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action, 'group' => $group, 'sort' => $sort, 'dir' => $direction]);
+        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action, 'group' => $group, 'sort' => $sort, 'dir' => $direction, 'perpage' => $perpage]);
 
         $menu = $PAGE->settingsnav->find('sibguexporttest_download', navigation_node::NODETYPE_LEAF);
         $menu->make_active();

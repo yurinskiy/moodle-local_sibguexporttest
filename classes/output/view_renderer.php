@@ -28,6 +28,7 @@ require_once($CFG->dirroot . '/enrol/locallib.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 use context_course;
+use core\context\course;
 use course_enrolment_manager;
 use html_writer;
 use local_sibguexporttest\debug;
@@ -46,26 +47,35 @@ use quiz_attempt;
 class view_renderer extends plugin_renderer_base {
 
     private ?moodle_url $baseurl = null;
+    private ?context_course $context = null;
     private ?int $courseid = null;
+    private ?\stdClass $course = null;
     private ?int $roleid = null;
 
     private ?settings $settings = null;
+    private array $quizzids = [];
     private array $quizzes = [];
 
     public function init_manager() {
-        global  $COURSE, $DB;
+        global $COURSE, $DB;
 
         $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
 
+        $this->context = context_course::instance($COURSE->id);
         $this->courseid = $COURSE->id;
+        $this->course = $DB->get_record('course', array('id' => $COURSE->id), '*', MUST_EXIST);
         $this->roleid = $studentrole->id;
 
         $this->settings = settings::get_by_course($COURSE->id);
 
         $contents = $this->settings->get_contents();
         $contents = array_column($contents, 'order','id');
-        $this->quizzes = $DB->get_records_list('quiz', 'id', array_column($contents, 'id'));
+
+        $this->quizzids = array_keys($contents);
+
+        $this->quizzes = $DB->get_records_list('quiz', 'id', array_keys($contents));
         usort($this->quizzes, fn ($a, $b) => ((int)$contents[$a->id]) <=> ((int)$contents[$b->id]));
+
     }
 
     public function init_baseurl(moodle_url $url) {
@@ -77,43 +87,83 @@ class view_renderer extends plugin_renderer_base {
      */
     public function view(array $filter = [], string $sort = 'lastcourseaccess', $direction='ASC', $page = 0, $perpage = 25): string {
         $output = $this->get_download_all();
-        $output .= $this->filter();
+
+        ['group' => $selectedgroup] = $filter;
+
+        $output .= html_writer::start_tag('form', ['method' => 'get']);
+
+        $output .= $this->select_group($selectedgroup);
 
         $users = $this->get_users($filter, $sort, $direction, $page, $perpage);
 
-        $output .= $this->get_table($users, $sort, $direction);
         $output .= $this->get_paginator($filter, $page, $perpage);
+        $output .= html_writer::div($this->get_table($users, $sort, $direction), 'no-overflow');
+        $output .= $this->get_paginator($filter, $page, $perpage);
+
+        $output .= $this->select_perpage($perpage);
+
+        $output .= html_writer::input_hidden_params($this->baseurl, ['group', 'perpage']);
+        $output .= html_writer::end_tag('form');
 
         return $output;
     }
 
-    public function filter():string {
-        global $COURSE, $DB;
-
-        $output = html_writer::start_tag('form', ['method' => 'get', 'class' => 'form-inline']);
-
-
-        $output .= html_writer::start_tag('div', ['class' => 'm-b-1']);
-        $output .= html_writer::label('Учебная группа', 'group', ['class' => 'm-r-1']);
-
-        $groups = groups_get_all_groups($COURSE->id);
-        foreach ($groups as $group) {
-            $usercount = $DB->count_records('groups_members', array('groupid' => $group->id));
-            $groupname = format_string($group->name) . ' (' . $usercount . ')';
-
-            $groupoptions[$group->id] = s($groupname);
+    protected function select_group($selected = 0): string
+    {
+        global $USER;
+        if (!$groupmode = $this->course->groupmode) {
+            return '';
         }
 
-        $selectedgroup = $this->baseurl->get_param('group') ?? '';
-        $output .= html_writer::select($groupoptions ?? [], 'group', $selectedgroup, array('' => 'choosedots'), ['class' => 'form-control m-r-1']);
-        $output .= html_writer::empty_tag('input', ['class' => 'btn btn-secondary', 'type' => 'submit', 'value' => 'Поиск']);
+        $aag = has_capability('moodle/site:accessallgroups', $this->context);
+        $usergroups = array();
+        if ($groupmode == VISIBLEGROUPS or $aag) {
+            $allowedgroups = groups_get_all_groups($this->course->id, 0, $this->course->defaultgroupingid);
+            // Get user's own groups and put to the top.
+            $usergroups = groups_get_all_groups($this->course->id, $USER->id, $this->course->defaultgroupingid);
+        } else {
+            $allowedgroups = groups_get_all_groups($this->course->id, $USER->id, $this->course->defaultgroupingid);
+        }
 
-        $output .= html_writer::input_hidden_params($this->baseurl, ['group']);
+        $groupsmenu = array();
+        if (!$allowedgroups or $groupmode == VISIBLEGROUPS or $aag) {
+            $groupsmenu[0] = get_string('allparticipants');
+        }
 
-        $output .= html_writer::end_tag('div');
-        $output .= html_writer::end_tag('form');
+        $groupsmenu += groups_sort_menu_options($allowedgroups, $usergroups);
 
-        return $output;
+        if ($groupmode == VISIBLEGROUPS) {
+            $grouplabel = get_string('groupsvisible');
+        } else {
+            $grouplabel = get_string('groupsseparate');
+        }
+
+        if ($aag and $this->course->defaultgroupingid) {
+            if ($grouping = groups_get_grouping($this->course->defaultgroupingid)) {
+                $grouplabel = $grouplabel . ' (' . format_string($grouping->name) . ')';
+            }
+        }
+
+        if (count($groupsmenu) == 1) {
+            $groupname = reset($groupsmenu);
+            $output = $grouplabel.': '.$groupname;
+        } else {
+            $output = html_writer::label($grouplabel, 'group');
+
+            $output .= html_writer::select($groupsmenu, 'group', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => 'this.form.submit()']);
+        }
+
+        return html_writer::div($output, 'groupselector form-inline');
+    }
+
+    protected function select_perpage($selected = 25): string
+    {
+        $options = [25, 50, 100, 250];
+        $output = html_writer::label(get_string('perpage', 'moodle'), 'perpage');
+
+        $output .= html_writer::select(array_combine($options, $options), 'perpage', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => 'this.form.submit()']);
+
+        return html_writer::div($output, 'groupselector form-inline');
     }
 
     public function get_download_all(): string {
@@ -184,16 +234,15 @@ class view_renderer extends plugin_renderer_base {
         $output .= html_writer::end_tag('th') . "\n";
 
         $output .= html_writer::start_tag('th', array_merge($attrcell, ['rowspan' => 2]));
+        $output .= $this->column_sort('lastattempt',  'Дата последней попытки', $sort, $direction);
+        $output .= html_writer::end_tag('th') . "\n";
+
+        $output .= html_writer::start_tag('th', array_merge($attrcell, ['rowspan' => 2]));
         $output .= $this->column_sort('lastcourseaccess',  get_string('lastcourseaccess'), $sort, $direction);
         $output .= html_writer::end_tag('th') . "\n";
 
 
         $suboutput = html_writer::start_tag('tr', array()) . "\n";
-        foreach ($this->quizzes as $quiz) {
-            $output .= html_writer::tag('th', $quiz->name, array_merge($attrcell, ['colspan' => 2])) . "\n";
-            $suboutput .= html_writer::tag('td', 'Дата выполнения', $attrcell) . "\n";
-            $suboutput .= html_writer::tag('td', 'Состояние', $attrcell) . "\n";
-        }
         $suboutput .= html_writer::end_tag('tr') . "\n";
 
         $output .= html_writer::tag('th', get_string('actions'), array_merge($attrcell, ['rowspan' => 2])) . "\n";
@@ -215,24 +264,14 @@ class view_renderer extends plugin_renderer_base {
             $url = new moodle_url('/user/view.php', ['id' => $user->id]);
             $output .= html_writer::tag('td', html_writer::link($url, \implode(' ', [$user->lastname, $user->firstname]))) . "\n";
             $output .= html_writer::tag('td', $user->email) . "\n";
+            $output .= html_writer::tag('td', userdate($user->lastattempt)) . "\n";
             $output .= html_writer::tag('td', userdate($user->lastcourseaccess)) . "\n";
 
-            foreach ($this->quizzes as $quiz) {
-                $attempts = quiz_get_user_attempts($quiz->id, $user->id, 'all', true);
-                $lastattempt = end($attempts);
-
-                if (!empty($lastattempt->state)) {
-                    $output .= html_writer::tag('td', userdate($lastattempt->timefinish)) . "\n";
-                    $output .= html_writer::tag('td', quiz_attempt::state_name($lastattempt->state)) . "\n";
-                } else {
-                    $output .= html_writer::tag('td', '-', ['colspan' => 2]) . "\n";
-                }
-            }
             $actions = [];
             $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'one', 'courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id]);
             $actions[] = html_writer::link($url, 'Скачать') . "\n";
-            $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'one', 'courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id, 'debug' => true]);
-            $actions[] = html_writer::link($url, 'Отладочный файл');
+            //$url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'one', 'courseid' => $this->baseurl->param('courseid'), 'userid' => $user->id, 'debug' => true]);
+            //$actions[] = html_writer::link($url, 'Отладочный файл');
             $output .= html_writer::tag('td', \implode(PHP_EOL, $actions)) . "\n";
             $output .= html_writer::end_tag('tr') . "\n";
         }
@@ -260,15 +299,21 @@ class view_renderer extends plugin_renderer_base {
         $params['courseid'] = $this->courseid;
         $params['roleid'] = $this->roleid;
 
-        $context = context_course::instance($params['courseid']);
-        $contextids = $context->get_parent_context_ids();
-        $contextids[] = $context->id;
+
+        $contextids = $this->context->get_parent_context_ids();
+        $contextids[] = $this->context->id;
         list($contextsql, $contextparams) = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED);
 
         $params += $contextparams;
 
+        list($quizzsql, $quizzparams) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
+        $params += $quizzparams;
+
         $sql = <<<SQL
-SELECT DISTINCT u.id, u.email, u.picture, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename, u.imagealt, trim(concat(u.lastname, ' ', u.firstname)) AS fio, COALESCE(ul.timeaccess, 0) AS lastcourseaccess
+SELECT DISTINCT u.id, u.email, u.picture, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename, u.imagealt, 
+                trim(concat(u.lastname, ' ', u.firstname)) AS fio, 
+                COALESCE(ul.timeaccess, 0) AS lastcourseaccess,
+                (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $quizzsql AND qa.userid = u.id) AS lastattempt
   FROM {user} u
   JOIN {enrol} e ON (e.courseid = :courseid) 
   JOIN {user_enrolments} ue ON (ue.userid = u.id  AND ue.enrolid = e.id)
@@ -289,6 +334,11 @@ SQL;
             $params['groupid'] = $filter['group'];
         }
 
+
+        list($quizzsql2, $quizzparams2) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
+        $params += $quizzparams2;
+        $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $quizzsql2 AND qa.userid = u.id) > 0";
+
         $sql .= " ORDER BY $sort $direction";
 
         return $DB->get_records_sql($sql, $params, $page*$perpage, $perpage);
@@ -300,9 +350,8 @@ SQL;
         $params['courseid'] = $this->courseid;
         $params['roleid'] = $this->roleid;
 
-        $context = context_course::instance($params['courseid']);
-        $contextids = $context->get_parent_context_ids();
-        $contextids[] = $context->id;
+        $contextids = $this->context->get_parent_context_ids();
+        $contextids[] = $this->context->id;
         list($contextsql, $contextparams) = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED);
 
         $params += $contextparams;

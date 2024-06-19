@@ -83,6 +83,7 @@ class task_renderer extends plugin_renderer_base {
 
         $output .= html_writer::tag('th', 'ID') . "\n";
         $output .= html_writer::tag('th', 'Статус') . "\n";
+        $output .= html_writer::tag('th', 'Вид задания') . "\n";
         $output .= html_writer::tag('th', 'Дата создания') . "\n";
         $output .= html_writer::tag('th', 'Дата обработки') . "\n";
         $output .= html_writer::tag('th', 'Описание') . "\n";
@@ -104,6 +105,7 @@ class task_renderer extends plugin_renderer_base {
 
             $output .= html_writer::tag('th', $task->get('id')) . "\n";
             $output .= html_writer::tag('td', $task->get('status')) . "\n";
+            $output .= html_writer::tag('td', 'Билеты ВИ') . "\n";
             $output .= html_writer::tag('td', userdate($task->get('timecreated'))) . "\n";
             $output .= html_writer::tag('td', $task->get('status') !== 'new' ? userdate($task->get('timemodified')): '-') . "\n";
 
