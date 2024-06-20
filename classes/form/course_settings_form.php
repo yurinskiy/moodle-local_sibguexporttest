@@ -26,7 +26,7 @@ class course_settings_form extends \moodleform {
             $mform->setType($field.'_editor', PARAM_RAW);
         }
 
-        // Настройки тестов
+        // Настройка тестов
         $mform->addElement('header', 'settingstest', get_string('settingstest', 'local_sibguexporttest'));
 
         $quizs = $this->get_quizzes();

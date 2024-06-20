@@ -10,8 +10,8 @@
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="headerpage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Верхний колонтитул"/>
         <FIELD NAME="footerpage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Верхний колонтитул"/>
-        <FIELD NAME="headerbodypage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Титульная страница ДО номера варианта"/>
-        <FIELD NAME="footerbodypage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Титульная страница ПОСЛЕ номера варианта"/>
+        <FIELD NAME="headerbodypage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Титульный лист ДО номера варианта"/>
+        <FIELD NAME="footerbodypage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Титульный лист ПОСЛЕ номера варианта"/>
         <FIELD NAME="content" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON объект со списком тестов"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
