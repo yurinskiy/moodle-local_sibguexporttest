@@ -59,7 +59,39 @@ switch ($action) {
         $group = optional_param('group', '', PARAM_INT);
         $sort = optional_param('sort', 'lastcourseaccess', PARAM_ALPHAEXT);
         $direction = optional_param('dir', 'ASC', PARAM_ALPHAEXT);
-        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action, 'group' => $group, 'sort' => $sort, 'dir' => $direction, 'perpage' => $perpage]);
+        $lastattempt_sdt = optional_param_array('lastattempt_sdt', [], PARAM_INT);
+        $lastattempt_edt = optional_param_array('lastattempt_edt', [], PARAM_INT);
+
+        $lastattempt_sdt += [
+            'enabled' => false,
+            'day' => date_create()->format('d'),
+            'month' => date_create()->format('m'),
+            'year' => date_create()->format('Y'),
+        ];
+
+        $lastattempt_edt += [
+            'enabled' => false,
+            'day' => date_create()->format('d'),
+            'month' => date_create()->format('m'),
+            'year' => date_create()->format('Y'),
+        ];
+
+        $PAGE->set_url('/local/sibguexporttest/index.php', [
+            'courseid' => $courseid,
+            'action' => $action,
+            'group' => $group,
+            'sort' => $sort,
+            'dir' => $direction,
+            'perpage' => $perpage,
+            'lastattempt_sdt[enabled]' => $lastattempt_sdt['enabled'],
+            'lastattempt_sdt[day]' => $lastattempt_sdt['day'],
+            'lastattempt_sdt[month]' => $lastattempt_sdt['month'],
+            'lastattempt_sdt[year]' => $lastattempt_sdt['year'],
+            'lastattempt_edt[enabled]' => $lastattempt_edt['enabled'],
+            'lastattempt_edt[day]' => $lastattempt_edt['day'],
+            'lastattempt_edt[month]' => $lastattempt_edt['month'],
+            'lastattempt_edt[year]' => $lastattempt_edt['year'],
+        ]);
 
         $menu = $PAGE->settingsnav->find('sibguexporttest_download', navigation_node::NODETYPE_LEAF);
         $menu->make_active();
@@ -69,7 +101,11 @@ switch ($action) {
         $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
         $render->init_baseurl($PAGE->url);
         $render->init_manager();
-        $output = $render->view(['group' => $group], $sort, $direction, $page, $perpage);
+        $output = $render->view([
+            'group' => $group,
+            'lastattempt_sdt' => $lastattempt_sdt,
+            'lastattempt_edt' => $lastattempt_edt,
+        ], $sort, $direction, $page, $perpage);
         break;
     case 'task':
         $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action]);

@@ -22,20 +22,17 @@
 
 namespace local_sibguexporttest\output;
 
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->dirroot . '/enrol/locallib.php');
-require_once($CFG->dirroot . '/mod/quiz/locallib.php');
-
 use context_course;
-use core\context\course;
-use course_enrolment_manager;
 use html_writer;
-use local_sibguexporttest\debug;
 use local_sibguexporttest\settings;
 use moodle_url;
 use plugin_renderer_base;
-use quiz_attempt;
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/enrol/locallib.php');
+require_once($CFG->libdir . '/form/dateselector.php');
+require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
  * Renderer class for 'local_sibguexporttest' component.
@@ -86,13 +83,17 @@ class view_renderer extends plugin_renderer_base {
      * @return string HTML to output.
      */
     public function view(array $filter = [], string $sort = 'lastcourseaccess', $direction='ASC', $page = 0, $perpage = 25): string {
-        $output = $this->get_download_all();
 
-        ['group' => $selectedgroup] = $filter;
+        ['group' => $selectedgroup, 'lastattempt_sdt' => $lastattempt_sdt, 'lastattempt_edt' => $lastattempt_edt] = $filter;
 
-        $output .= html_writer::start_tag('form', ['method' => 'get']);
+        $output = html_writer::start_tag('form', ['method' => 'get']);
+
+        $output .= $this->dateselector('lastattempt_sdt', '&nbsp;&nbsp;Дата попытки с', $lastattempt_sdt);
+        $output .= $this->dateselector('lastattempt_edt', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; по', $lastattempt_edt);
 
         $output .= $this->select_group($selectedgroup);
+
+        $output .= html_writer::div(html_writer::empty_tag('input', ['class' => 'btn btn-primary', 'type' => 'submit', 'value' => 'Отфильтровать', 'style' => 'display: none']), 'groupselector form-inline');
 
         $users = $this->get_users($filter, $sort, $direction, $page, $perpage);
 
@@ -102,7 +103,11 @@ class view_renderer extends plugin_renderer_base {
 
         $output .= $this->select_perpage($perpage);
 
-        $output .= html_writer::input_hidden_params($this->baseurl, ['group', 'perpage']);
+        $output .= html_writer::input_hidden_params($this->baseurl, [
+            'group', 'perpage',
+            'lastattempt_sdt[day]', 'lastattempt_sdt[month]', 'lastattempt_sdt[year]', 'lastattempt_sdt[enabled]',
+            'lastattempt_edt[day]', 'lastattempt_edt[month]', 'lastattempt_edt[year]', 'lastattempt_edt[enabled]'
+        ]);
         $output .= html_writer::end_tag('form');
 
         return $output;
@@ -148,20 +153,20 @@ class view_renderer extends plugin_renderer_base {
             $groupname = reset($groupsmenu);
             $output = $grouplabel.': '.$groupname;
         } else {
-            $output = html_writer::label($grouplabel, 'group');
+            $output = html_writer::label($grouplabel, 'menugroup');
 
-            $output .= html_writer::select($groupsmenu, 'group', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => 'this.form.submit()']);
+            $output .= html_writer::select($groupsmenu, 'group', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => '$(this.form).find(\'input[type=submit]\').show()']);
         }
 
-        return html_writer::div($output, 'groupselector form-inline');
+        return html_writer::div($output, 'my-2 form-inline');
     }
 
     protected function select_perpage($selected = 25): string
     {
         $options = [25, 50, 100, 250];
-        $output = html_writer::label(get_string('perpage', 'moodle'), 'perpage');
+        $output = html_writer::label(get_string('perpage', 'moodle'), 'menuperpage');
 
-        $output .= html_writer::select(array_combine($options, $options), 'perpage', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => 'this.form.submit()']);
+        $output .= html_writer::select(array_combine($options, $options), 'perpage', $selected, false, ['class' => 'form-control m-r-1']);
 
         return html_writer::div($output, 'groupselector form-inline');
     }
@@ -234,7 +239,7 @@ class view_renderer extends plugin_renderer_base {
         $output .= html_writer::end_tag('th') . "\n";
 
         $output .= html_writer::start_tag('th', array_merge($attrcell, ['rowspan' => 2]));
-        $output .= $this->column_sort('lastattempt',  'Дата последней попытки', $sort, $direction);
+        $output .= $this->column_sort('lastattempt',  'Дата попытки', $sort, $direction);
         $output .= html_writer::end_tag('th') . "\n";
 
         $output .= html_writer::start_tag('th', array_merge($attrcell, ['rowspan' => 2]));
@@ -323,6 +328,10 @@ WHERE (SELECT COUNT(1) FROM {role_assignments} ra
                          AND ra.roleid = :roleid AND ra.contextid $contextsql) > 0
 SQL;
 
+        list($quizzsql2, $quizzparams2) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
+        $params += $quizzparams2;
+        $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $quizzsql2 AND qa.userid = u.id) > 0";
+
         if (!empty($filter['group'])) {
             $sql .= <<<SQL
  AND (SELECT COUNT(1) 
@@ -334,10 +343,25 @@ SQL;
             $params['groupid'] = $filter['group'];
         }
 
+        if (!empty($filter['lastattempt_sdt']['enabled'])) {
+            list($lastattempt_sdtsql, $lastattempt_sdtparams) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
+            $params += $lastattempt_sdtparams;
 
-        list($quizzsql2, $quizzparams2) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
-        $params += $quizzparams2;
-        $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $quizzsql2 AND qa.userid = u.id) > 0";
+            $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $lastattempt_sdtsql AND qa.userid = u.id) >= :lastattempt_sdt";
+            $params['lastattempt_sdt'] = \DateTime::createFromFormat('Y-m-d', implode('-', [
+                $filter['lastattempt_sdt']['year'] ?? '1970', $filter['lastattempt_sdt']['month'] ?? '01', $filter['lastattempt_sdt']['day'] ?? '01'
+            ]))->setTime(0,0)->getTimestamp();
+        }
+
+        if (!empty($filter['lastattempt_edt']['enabled'])) {
+            list($lastattempt_edtsql, $lastattempt_edtparams) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
+            $params += $lastattempt_edtparams;
+
+            $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $lastattempt_edtsql AND qa.userid = u.id) <= :lastattempt_edt";
+            $params['lastattempt_edt'] = \DateTime::createFromFormat('Y-m-d', implode('-', [
+                $filter['lastattempt_edt']['year'] ?? '1970', $filter['lastattempt_edt']['month'] ?? '01', $filter['lastattempt_edt']['day'] ?? '01'
+            ]))->setTime(0,0)->getTimestamp();
+        }
 
         $sql .= " ORDER BY $sort $direction";
 
@@ -393,5 +417,32 @@ SQL;
         ]);
 
         return $OUTPUT->render($checkbox);
+    }
+
+    private function dateselector(string $name, string $title, array $selected = null) {
+        $calendartype = \core_calendar\type_factory::get_calendar_instance();
+        $dateformat = $calendartype->get_date_order($calendartype->get_min_year(), $calendartype->get_max_year());
+
+        if (!$selected || !$selected['enabled']) {
+            $selected = [
+                'enabled' => false,
+                'day' => date_create()->format('d'),
+                'month' => date_create()->format('m'),
+                'year' => date_create()->format('Y'),
+            ];
+        }
+
+        $output = html_writer::span($title);
+
+        foreach ($dateformat as $key => $value) {
+
+            $output .= html_writer::select($value, $name.'['.$key.']', (int) $selected[$key], false, ['class' => 'ml-2', 'disabled' => !$selected['enabled'], 'onchange' => '$(this.form).find(\'input[type=submit]\').show()']);
+        }
+
+        $output .= html_writer::tag('i', '', ['class' => 'icon fa fa-calendar fa-fw ml-2', 'title' => 'Календарь', 'role' => 'img']);
+
+        $output .= html_writer::checkbox($name.'[enabled]', true, $selected['enabled'], 'Включить', ['onchange'=>'$(this.form).find(\'input[type=submit]\').show();$(this).closest(\'div\').find(\'select\').prop(\'disabled\', !this.checked)']);
+
+        return html_writer::div($output, 'my-2 form-inline');
     }
 }
