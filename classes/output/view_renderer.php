@@ -93,7 +93,11 @@ class view_renderer extends plugin_renderer_base {
 
         $output .= $this->select_group($selectedgroup);
 
-        $output .= html_writer::div(html_writer::empty_tag('input', ['class' => 'btn btn-primary', 'type' => 'submit', 'value' => 'Отфильтровать', 'style' => 'display: none']), 'groupselector form-inline');
+        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-2 d-none', 'type' => 'submit', 'name' => 'filter', 'value' => 'Отфильтровать']);
+        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-2 d-none', 'type' => 'submit', 'name' => 'download_selected', 'value' => 'Скачать выбранные билеты']);
+        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-2', 'type' => 'submit', 'name' => 'download_all', 'value' => 'Скачать все билеты', 'onclick' => 'return $(this).closest(\'div\').find(\'input[name=filter]\').hasClass(\'d-none\') || confirm(\'Нажмите кнопку отфильтровать, чтобы корректно выгрузить билеты. Продолжить все равно?\');']);
+
+        $output .= html_writer::div(implode('', $buttons), 'groupselector form-inline');
 
         $users = $this->get_users($filter, $sort, $direction, $page, $perpage);
 
@@ -155,7 +159,7 @@ class view_renderer extends plugin_renderer_base {
         } else {
             $output = html_writer::label($grouplabel, 'menugroup');
 
-            $output .= html_writer::select($groupsmenu, 'group', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => '$(this.form).find(\'input[type=submit]\').show()']);
+            $output .= html_writer::select($groupsmenu, 'group', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => '$(this.form).find(\'input[name=filter]\').removeClass(\'d-none\')']);
         }
 
         return html_writer::div($output, 'my-2 form-inline');
@@ -166,17 +170,9 @@ class view_renderer extends plugin_renderer_base {
         $options = [25, 50, 100, 250];
         $output = html_writer::label(get_string('perpage', 'moodle'), 'menuperpage');
 
-        $output .= html_writer::select(array_combine($options, $options), 'perpage', $selected, false, ['class' => 'form-control m-r-1']);
+        $output .= html_writer::select(array_combine($options, $options), 'perpage', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => 'this.form.submit()']);
 
         return html_writer::div($output, 'groupselector form-inline');
-    }
-
-    public function get_download_all(): string {
-        $output = html_writer::start_tag('div', ['class' => 'py-2']);
-        $url = new moodle_url('/local/sibguexporttest/generate.php', ['action' => 'all', 'courseid' => $this->baseurl->param('courseid')]);
-        $output .= html_writer::link($url, 'Скачать все билеты', ['class' => 'btn btn-primary']);
-
-        return $output;
     }
 
     public function get_table(array $users = [], string $sort = 'lastcourseaccess', $direction='ASC') {
@@ -294,7 +290,7 @@ class view_renderer extends plugin_renderer_base {
         return $this->baseurl;
     }
 
-    private function get_users(array $filter = [], string $sort = 'lastcourseaccess', $direction='ASC', $page = 0, $perpage = 25) {
+    public function get_users(array $filter = [], string $sort = 'lastcourseaccess', $direction='ASC', $page = 0, $perpage = 25) {
         global $DB;
 
         if ($direction !== 'ASC') {
@@ -405,18 +401,16 @@ SQL;
     }
 
     private function col_select($data) {
-        global $OUTPUT;
 
-        $checkbox = new \core\output\checkbox_toggleall('participants-table', false, [
-            'classes' => 'usercheckbox m-1',
-            'id' => 'user' . $data->id,
-            'name' => 'user' . $data->id,
-            'checked' => false,
-            'label' => get_string('selectitem', 'moodle', fullname($data)),
-            'labelclasses' => 'accesshide',
-        ]);
-
-        return $OUTPUT->render($checkbox);
+        return html_writer::checkbox(
+            'userids[]',
+            $data->id,
+            false,
+            '',
+            [
+                'class' => 'usercheckbox m-1',
+                'onchange' => '$(this).closest(\'table\').find(\'input[type=checkbox]:checked\').length > 0 ? $(this.form).find(\'input[name=download_selected]\').removeClass(\'d-none\'): $(this.form).find(\'input[name=download_selected]\').addClass(\'d-none\')'
+            ]);
     }
 
     private function dateselector(string $name, string $title, array $selected = null) {
@@ -436,12 +430,12 @@ SQL;
 
         foreach ($dateformat as $key => $value) {
 
-            $output .= html_writer::select($value, $name.'['.$key.']', (int) $selected[$key], false, ['class' => 'ml-2', 'disabled' => !$selected['enabled'], 'onchange' => '$(this.form).find(\'input[type=submit]\').show()']);
+            $output .= html_writer::select($value, $name.'['.$key.']', (int) $selected[$key], false, ['class' => 'ml-2', 'disabled' => !$selected['enabled'], 'onchange' => '$(this.form).find(\'input[name=filter]\').removeClass(\'d-none\')']);
         }
 
         $output .= html_writer::tag('i', '', ['class' => 'icon fa fa-calendar fa-fw ml-2', 'title' => 'Календарь', 'role' => 'img']);
 
-        $output .= html_writer::checkbox($name.'[enabled]', true, $selected['enabled'], 'Включить', ['onchange'=>'$(this.form).find(\'input[type=submit]\').show();$(this).closest(\'div\').find(\'select\').prop(\'disabled\', !this.checked)']);
+        $output .= html_writer::checkbox($name.'[enabled]', true, $selected['enabled'], 'Включить', ['onchange'=>'$(this.form).find(\'input[name=filter]\').removeClass(\'d-none\');$(this).closest(\'div\').find(\'select\').prop(\'disabled\', !this.checked)']);
 
         return html_writer::div($output, 'my-2 form-inline');
     }

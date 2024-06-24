@@ -31,7 +31,6 @@ use local_sibguexporttest\export;
 use zip_archive;
 
 class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
-
     public static function instance(
         int $exportid
     ): self {

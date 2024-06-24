@@ -20,7 +20,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-global $CFG, $PAGE, $DB, $OUTPUT;
+global $CFG, $PAGE, $DB, $OUTPUT, $USER;
 
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
@@ -76,22 +76,34 @@ switch ($action) {
             'year' => date_create()->format('Y'),
         ];
 
-        $PAGE->set_url('/local/sibguexporttest/index.php', [
+        $url_params = [
             'courseid' => $courseid,
             'action' => $action,
             'group' => $group,
             'sort' => $sort,
             'dir' => $direction,
             'perpage' => $perpage,
-            'lastattempt_sdt[enabled]' => $lastattempt_sdt['enabled'],
-            'lastattempt_sdt[day]' => $lastattempt_sdt['day'],
-            'lastattempt_sdt[month]' => $lastattempt_sdt['month'],
-            'lastattempt_sdt[year]' => $lastattempt_sdt['year'],
-            'lastattempt_edt[enabled]' => $lastattempt_edt['enabled'],
-            'lastattempt_edt[day]' => $lastattempt_edt['day'],
-            'lastattempt_edt[month]' => $lastattempt_edt['month'],
-            'lastattempt_edt[year]' => $lastattempt_edt['year'],
-        ]);
+        ];
+
+        if ($lastattempt_sdt['enabled']) {
+            $url_params += [
+                'lastattempt_sdt[enabled]' => $lastattempt_sdt['enabled'],
+                'lastattempt_sdt[day]' => $lastattempt_sdt['day'],
+                'lastattempt_sdt[month]' => $lastattempt_sdt['month'],
+                'lastattempt_sdt[year]' => $lastattempt_sdt['year']
+            ];
+        }
+
+        if ($lastattempt_edt['enabled']) {
+            $url_params += [
+                'lastattempt_edt[enabled]' => $lastattempt_edt['enabled'],
+                'lastattempt_edt[day]' => $lastattempt_edt['day'],
+                'lastattempt_edt[month]' => $lastattempt_edt['month'],
+                'lastattempt_edt[year]' => $lastattempt_edt['year'],
+            ];
+        }
+
+        $PAGE->set_url('/local/sibguexporttest/index.php', $url_params);
 
         $menu = $PAGE->settingsnav->find('sibguexporttest_download', navigation_node::NODETYPE_LEAF);
         $menu->make_active();
@@ -101,6 +113,37 @@ switch ($action) {
         $render = $PAGE->get_renderer('local_sibguexporttest', 'view');
         $render->init_baseurl($PAGE->url);
         $render->init_manager();
+
+        $downloadAll = optional_param('download_all', false, PARAM_BOOL);
+        $downloadSelected = optional_param('download_selected', false, PARAM_BOOL);
+        if ($downloadAll || $downloadSelected) {
+            if ($downloadAll) {
+                $users = $render->get_users([
+                    'group' => $group,
+                    'lastattempt_sdt' => $lastattempt_sdt,
+                    'lastattempt_edt' => $lastattempt_edt,
+                ], $sort, $direction, 0, 0);
+                $userids = array_column($users, 'id');
+            } else {
+                $userids = optional_param_array('userids', [], PARAM_INT);
+            }
+
+            if (empty($userids)) {
+                redirect($PAGE->url, 'Нет данных для выгрузки.', \core\output\notification::NOTIFY_ERROR);
+            } else {
+                $export = new \local_sibguexporttest\export();
+                $export->set('courseid', $courseid);
+                $export->set('userids', json_encode($userids));
+                $export->save();
+
+                $task = \local_sibguexporttest\task\local_sibguexporttest_create_zip::instance($export->get('id'));
+                $task->set_userid($USER->id);
+                \core\task\manager::queue_adhoc_task($task);
+
+                redirect($PAGE->url, 'Формирования zip-архива поставлено в очередь.', \core\output\notification::NOTIFY_INFO);
+            }
+        }
+
         $output = $render->view([
             'group' => $group,
             'lastattempt_sdt' => $lastattempt_sdt,
