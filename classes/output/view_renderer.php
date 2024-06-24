@@ -93,11 +93,7 @@ class view_renderer extends plugin_renderer_base {
 
         $output .= $this->select_group($selectedgroup);
 
-        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-2 d-none', 'type' => 'submit', 'name' => 'filter', 'value' => 'Отфильтровать']);
-        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-2 d-none', 'type' => 'submit', 'name' => 'download_selected', 'value' => 'Скачать выбранные билеты']);
-        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-2', 'type' => 'submit', 'name' => 'download_all', 'value' => 'Скачать все билеты', 'onclick' => 'return $(this).closest(\'div\').find(\'input[name=filter]\').hasClass(\'d-none\') || confirm(\'Нажмите кнопку отфильтровать, чтобы корректно выгрузить билеты. Продолжить все равно?\');']);
-
-        $output .= html_writer::div(implode('', $buttons), 'groupselector form-inline');
+        $output .= html_writer::div(html_writer::empty_tag('input', ['class' => 'btn btn-primary d-none', 'type' => 'submit', 'name' => 'filter', 'value' => 'Отфильтровать']), 'groupselector form-inline');
 
         $users = $this->get_users($filter, $sort, $direction, $page, $perpage);
 
@@ -112,6 +108,11 @@ class view_renderer extends plugin_renderer_base {
             'lastattempt_sdt[day]', 'lastattempt_sdt[month]', 'lastattempt_sdt[year]', 'lastattempt_sdt[enabled]',
             'lastattempt_edt[day]', 'lastattempt_edt[month]', 'lastattempt_edt[year]', 'lastattempt_edt[enabled]'
         ]);
+
+        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1', 'type' => 'submit', 'name' => 'download_all', 'value' => 'Скачать все билеты', 'onclick' => 'return $(this).closest(\'div\').find(\'input[name=filter]\').hasClass(\'d-none\') || confirm(\'Нажмите кнопку отфильтровать, чтобы корректно выгрузить билеты. Продолжить все равно?\');']);
+        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1 d-none', 'type' => 'submit', 'name' => 'download_selected', 'value' => 'Скачать выбранные билеты']);
+        $output .= html_writer::div(implode('', $buttons), 'groupselector form-inline');
+
         $output .= html_writer::end_tag('form');
 
         return $output;
