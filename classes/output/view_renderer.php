@@ -304,7 +304,8 @@ class view_renderer extends plugin_renderer_base {
 
         $params['courseid'] = $this->courseid;
         $params['roleid'] = $this->roleid;
-
+        $params['state1'] = \quiz_attempt::FINISHED;
+        $params['state2'] = \quiz_attempt::ABANDONED;
 
         $contextids = $this->context->get_parent_context_ids();
         $contextids[] = $this->context->id;
@@ -319,7 +320,10 @@ class view_renderer extends plugin_renderer_base {
 SELECT DISTINCT u.id, u.email, u.picture, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename, u.imagealt, 
                 trim(concat(u.lastname, ' ', u.firstname)) AS fio, 
                 COALESCE(ul.timeaccess, 0) AS lastcourseaccess,
-                (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $quizzsql AND qa.userid = u.id) AS lastattempt
+                (SELECT MAX(case when qa.timefinish > 0 then qa.timefinish else qa.timemodified end) 
+                 FROM {quiz_attempts} qa 
+                 WHERE qa.state IN (:state1, :state2) 
+                   AND qa.quiz $quizzsql AND qa.userid = u.id) AS lastattempt
   FROM {user} u
   JOIN {enrol} e ON (e.courseid = :courseid) 
   JOIN {user_enrolments} ue ON (ue.userid = u.id  AND ue.enrolid = e.id)
@@ -331,7 +335,9 @@ SQL;
 
         list($quizzsql2, $quizzparams2) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
         $params += $quizzparams2;
-        $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $quizzsql2 AND qa.userid = u.id) > 0";
+        $sql .= " AND (SELECT MAX(case when qa.timefinish > 0 then qa.timefinish else qa.timemodified end) FROM {quiz_attempts} qa WHERE qa.state IN (:state1w, :state2w) AND qa.quiz $quizzsql2 AND qa.userid = u.id) > 0";
+        $params['state1w'] = \quiz_attempt::FINISHED;
+        $params['state2w'] = \quiz_attempt::ABANDONED;
 
         if (!empty($filter['group'])) {
             $sql .= <<<SQL
