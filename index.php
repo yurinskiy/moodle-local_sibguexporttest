@@ -105,6 +105,8 @@ switch ($action) {
 
         $PAGE->set_url('/local/sibguexporttest/index.php', $url_params);
 
+        //throw new Exception('test');
+
         $menu = $PAGE->settingsnav->find('sibguexporttest_download', navigation_node::NODETYPE_LEAF);
         $menu->make_active();
 
@@ -140,7 +142,7 @@ switch ($action) {
                 $task->set_userid($USER->id);
                 \core\task\manager::queue_adhoc_task($task);
 
-                redirect($PAGE->url, 'Формирования zip-архива поставлено в очередь.', \core\output\notification::NOTIFY_INFO);
+                redirect($PAGE->url, 'Формирование пакета выгрузки поставлено в очередь.', \core\output\notification::NOTIFY_INFO);
             }
         }
 
