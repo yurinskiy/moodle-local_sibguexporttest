@@ -146,7 +146,7 @@ HTML;
     public function get_variant() {
         if (!$this->variant) {
             foreach ($this->quizzes as $quizid) {
-                $attempts = quiz_get_user_attempts($quizid, $this->userid, 'all', true);
+                $attempts = quiz_get_user_attempts($quizid, $this->userid, 'finished', true);
                 $lastattempt = end($attempts);
 
                 if ($lastattempt) {
@@ -238,7 +238,7 @@ HTML;
         foreach ($this->quizzes as $quizid) {
             $quiz = \quiz::create($quizid, $this->userid);
             // Look for an existing attempt.
-            $attempts = quiz_get_user_attempts($quiz->get_quizid(), $this->userid, 'all', true);
+            $attempts = quiz_get_user_attempts($quiz->get_quizid(), $this->userid, 'finished', true);
 
             $lastattempt = end($attempts);
             if (!$lastattempt) {

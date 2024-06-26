@@ -93,7 +93,10 @@ class view_renderer extends plugin_renderer_base {
 
         $output .= $this->select_group($selectedgroup);
 
-        $output .= html_writer::div(html_writer::empty_tag('input', ['class' => 'btn btn-primary d-none', 'type' => 'submit', 'name' => 'filter', 'value' => 'Отфильтровать']), 'groupselector form-inline');
+        $buttons = [];
+        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1', 'type' => 'submit', 'name' => 'download_list', 'value' => 'Скачать список билетов', 'onclick' => 'return $(this).closest(\'div\').find(\'input[name=filter]\').hasClass(\'d-none\') || confirm(\'Нажмите кнопку отфильтровать, чтобы корректно выгрузить список билетов. Продолжить все равно?\');']);
+        $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary d-none', 'type' => 'submit', 'name' => 'filter', 'value' => 'Отфильтровать']);
+        $output .= html_writer::div(implode('', $buttons), 'groupselector form-inline');
 
         $users = $this->get_users($filter, $sort, $direction, $page, $perpage);
 
@@ -109,6 +112,7 @@ class view_renderer extends plugin_renderer_base {
             'lastattempt_edt[day]', 'lastattempt_edt[month]', 'lastattempt_edt[year]', 'lastattempt_edt[enabled]'
         ]);
 
+        $buttons = [];
         $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1', 'type' => 'submit', 'name' => 'download_all', 'value' => 'Скачать все билеты', 'onclick' => 'return $(this).closest(\'div\').find(\'input[name=filter]\').hasClass(\'d-none\') || confirm(\'Нажмите кнопку отфильтровать, чтобы корректно выгрузить билеты. Продолжить все равно?\');']);
         $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1 d-none', 'type' => 'submit', 'name' => 'download_selected', 'value' => 'Скачать выбранные билеты']);
         $output .= html_writer::div(implode('', $buttons), 'groupselector form-inline');

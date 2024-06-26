@@ -47,6 +47,9 @@ class export extends \core\persistent {
      */
     protected static function define_properties() {
         return [
+            'type' => [
+                'type' => PARAM_TEXT
+            ],
             'courseid' => [
                 'type' => PARAM_INT,
             ],

@@ -173,6 +173,21 @@ function xmldb_local_sibguexporttest_upgrade($oldversion): bool
         upgrade_plugin_savepoint(true, 2024051406, 'local', 'sibguexporttest');
     }
 
+    if ($oldversion < 2024062600) {
+
+        // Define field type to be added to local_sibguexporttest_export.
+        $table = new xmldb_table('local_sibguexporttest_export');
+        $field = new xmldb_field('type', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, 'selected', 'userid');
+
+        // Conditionally launch add field type.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sibguexporttest savepoint reached.
+        upgrade_plugin_savepoint(true, 2024062600, 'local', 'sibguexporttest');
+    }
+
 
     // Everything has succeeded to here. Return true.
     return true;

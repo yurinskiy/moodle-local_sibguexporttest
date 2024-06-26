@@ -116,24 +116,46 @@ switch ($action) {
         $render->init_baseurl($PAGE->url);
         $render->init_manager();
 
+        $downloadList = optional_param('download_list', false, PARAM_BOOL);
         $downloadAll = optional_param('download_all', false, PARAM_BOOL);
         $downloadSelected = optional_param('download_selected', false, PARAM_BOOL);
-        if ($downloadAll || $downloadSelected) {
-            if ($downloadAll) {
-                $users = $render->get_users([
-                    'group' => $group,
-                    'lastattempt_sdt' => $lastattempt_sdt,
-                    'lastattempt_edt' => $lastattempt_edt,
-                ], $sort, $direction, 0, 0);
-                $userids = array_column($users, 'id');
-            } else {
-                $userids = optional_param_array('userids', [], PARAM_INT);
+        if ($downloadAll || $downloadSelected || $downloadList) {
+            switch (true) {
+                case $downloadAll:
+                    $type = 'all';
+                    $users = $render->get_users([
+                        'group' => $group,
+                        'lastattempt_sdt' => $lastattempt_sdt,
+                        'lastattempt_edt' => $lastattempt_edt,
+                    ], $sort, $direction, 0, 0);
+                    $userids = array_column($users, 'id');
+                    $message = 'Формирование пакета выгрузки поставлено в очередь.';
+                    break;
+                case $downloadSelected:
+                    $type = 'selected';
+                    $userids = optional_param_array('userids', [], PARAM_INT);
+                    $message = 'Формирование пакета выгрузки поставлено в очередь.';
+                    break;
+                case $downloadList:
+                    $type = 'list';
+                    $users = $render->get_users([
+                        'group' => $group,
+                        'lastattempt_sdt' => $lastattempt_sdt,
+                        'lastattempt_edt' => $lastattempt_edt,
+                    ], $sort, $direction, 0, 0);
+                    $userids = array_column($users, 'id');
+                    $message = 'Формирование списка билетов поставлено в очередь.';
+                    break;
+                default:
+                    redirect($PAGE->url, 'Неизвестное действие.', \core\output\notification::NOTIFY_ERROR);
+                    break;
             }
 
             if (empty($userids)) {
-                redirect($PAGE->url, 'Нет данных для выгрузки.', \core\output\notification::NOTIFY_ERROR);
+                redirect($PAGE->url, 'Нет данных для формирования выгрузки/списка билетов.', \core\output\notification::NOTIFY_ERROR);
             } else {
                 $export = new \local_sibguexporttest\export();
+                $export->set('type', $type);
                 $export->set('courseid', $courseid);
                 $export->set('userids', json_encode($userids));
                 $export->save();
@@ -142,7 +164,7 @@ switch ($action) {
                 $task->set_userid($USER->id);
                 \core\task\manager::queue_adhoc_task($task);
 
-                redirect($PAGE->url, 'Формирование пакета выгрузки поставлено в очередь.', \core\output\notification::NOTIFY_INFO);
+                redirect($PAGE->url, $message, \core\output\notification::NOTIFY_INFO);
             }
         }
 

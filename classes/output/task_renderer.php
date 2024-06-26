@@ -103,9 +103,22 @@ class task_renderer extends plugin_renderer_base {
         foreach ($this->get_tasks($page, $perpage) as $task) {
             $output .= html_writer::start_tag('tr') . "\n";
 
+            switch ($task->get('type')) {
+                case 'all':
+                case 'selected':
+                    $type = 'Билеты ВИ';
+                    break;
+                case 'list':
+                    $type = 'Список билетов';
+                    break;
+                default:
+                    $type = 'Неизвестный тип';
+                    break;
+            }
+
             $output .= html_writer::tag('th', $task->get('id')) . "\n";
             $output .= html_writer::tag('td', $task->get('status')) . "\n";
-            $output .= html_writer::tag('td', 'Билеты ВИ') . "\n";
+            $output .= html_writer::tag('td', $type) . "\n";
             $output .= html_writer::tag('td', userdate($task->get('timecreated'))) . "\n";
             $output .= html_writer::tag('td', $task->get('status') !== 'new' ? userdate($task->get('timemodified')): '-') . "\n";
 
