@@ -28,7 +28,6 @@ require_once($CFG->dirroot . '/enrol/locallib.php');
 $action = required_param('action', PARAM_ALPHA);
 $courseid = required_param('courseid', PARAM_INT);
 $userid = optional_param('userid', null, PARAM_INT);
-$userids = optional_param_array('userids', null, PARAM_INT);
 $debug = optional_param('debug', false, PARAM_BOOL);
 //
 if (!$course = $DB->get_record('course', ['id' => $courseid])) {
@@ -53,17 +52,6 @@ switch ($action) {
         $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
         (new \local_sibguexporttest\generator($courseid, $userid, $renderer, $qrenderer, $debug))->get_pdf_response();
         exit;
-    case 'selected':
-        if (!$userids) {
-            throw new \moodle_exception('missingparam', '', '', 'userids');
-        }
-        $users = $DB->get_records('user', ['id' => $userids]);
-        break;
-    case 'all':
-        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
-        $manager = new \course_enrolment_manager($PAGE, $COURSE, null, $studentrole->id);
-        $users = $manager->get_users('lastcourseaccess', 'DESC', 0, 0);
-        break;
     default:
         redirect(
             new moodle_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => 'view']),
@@ -71,17 +59,3 @@ switch ($action) {
         );
         exit;
 }
-
-$export = new \local_sibguexporttest\export();
-$export->set('courseid', $courseid);
-$export->set('userids', json_encode(array_keys($users)));
-$export->save();
-
-$task = \local_sibguexporttest\task\local_sibguexporttest_create_zip::instance($export->get('id'));
-$task->set_userid($USER->id);
-\core\task\manager::queue_adhoc_task($task);
-
-redirect(
-    new moodle_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => 'view']),
-    'Формирования zip-архива поставлено в очередь.'
-);
