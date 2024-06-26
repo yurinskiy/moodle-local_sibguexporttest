@@ -354,20 +354,24 @@ SQL;
             list($lastattempt_sdtsql, $lastattempt_sdtparams) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
             $params += $lastattempt_sdtparams;
 
-            $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $lastattempt_sdtsql AND qa.userid = u.id) >= :lastattempt_sdt";
+            $sql .= " AND (SELECT MAX(case when qa.timefinish > 0 then qa.timefinish else qa.timemodified end) FROM {quiz_attempts} qa WHERE qa.state IN (:state1s, :state2s) AND qa.quiz $lastattempt_sdtsql AND qa.userid = u.id) >= :lastattempt_sdt";
             $params['lastattempt_sdt'] = \DateTime::createFromFormat('Y-m-d', implode('-', [
                 $filter['lastattempt_sdt']['year'] ?? '1970', $filter['lastattempt_sdt']['month'] ?? '01', $filter['lastattempt_sdt']['day'] ?? '01'
             ]))->setTime(0,0)->getTimestamp();
+            $params['state1s'] = \quiz_attempt::FINISHED;
+            $params['state2s'] = \quiz_attempt::ABANDONED;
         }
 
         if (!empty($filter['lastattempt_edt']['enabled'])) {
             list($lastattempt_edtsql, $lastattempt_edtparams) = $DB->get_in_or_equal($this->quizzids, SQL_PARAMS_NAMED);
             $params += $lastattempt_edtparams;
 
-            $sql .= " AND (SELECT MAX(qa.timefinish) FROM {quiz_attempts} qa WHERE qa.state = 'finished' AND qa.quiz $lastattempt_edtsql AND qa.userid = u.id) <= :lastattempt_edt";
+            $sql .= " AND (SELECT MAX(case when qa.timefinish > 0 then qa.timefinish else qa.timemodified end) FROM {quiz_attempts} qa WHERE qa.state IN (:state1e, :state2e) AND qa.quiz $lastattempt_edtsql AND qa.userid = u.id) <= :lastattempt_edt";
             $params['lastattempt_edt'] = \DateTime::createFromFormat('Y-m-d', implode('-', [
                 $filter['lastattempt_edt']['year'] ?? '1970', $filter['lastattempt_edt']['month'] ?? '01', $filter['lastattempt_edt']['day'] ?? '01'
             ]))->setTime(0,0)->getTimestamp();
+            $params['state1e'] = \quiz_attempt::FINISHED;
+            $params['state2e'] = \quiz_attempt::ABANDONED;
         }
 
         $sql .= " ORDER BY $sort $direction";
