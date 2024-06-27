@@ -11,3 +11,11 @@
 Вкладка "История заданий" содержит список выгрузок, который формировали пользователи на вкладке "Скачать билеты ВИ".
 Вкладка "Настройка билета ВИ" содержит детальную настройку формата билета ВИ: колонтитулы, титульный лист, элементы курса включенные в билет ВИ.
 Вкладка "Генератор тестовых билетов" содержит функционал для генерации тестовых билетов.
+
+## Установка дополнительных библиотек
+wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+tar vxf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+sudo cp wkhtmltox/bin/wk* /usr/local/bin/
+sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
+sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
+wkhtmltopdf --version
