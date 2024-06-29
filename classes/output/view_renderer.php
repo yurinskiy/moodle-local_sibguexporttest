@@ -96,8 +96,7 @@ class view_renderer extends plugin_renderer_base {
         $buttons = [];
         $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1', 'type' => 'submit', 'name' => 'download_list', 'value' => 'Скачать список билетов', 'onclick' => 'return $(this).closest(\'div\').find(\'input[name=filter]\').hasClass(\'d-none\') || confirm(\'Нажмите кнопку отфильтровать, чтобы корректно выгрузить список билетов. Продолжить все равно?\');']);
         $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary d-none', 'type' => 'submit', 'name' => 'filter', 'value' => 'Отфильтровать']);
-        $buttons = html_writer::div('','col-md-3 col-form-label').html_writer::div(implode('', $buttons), 'col-md-9 form-inline');
-        $output .= html_writer::div($buttons, 'form-group row');
+        $output .= html_writer::div(implode('', $buttons), 'my-2 form-inline');
 
         $users = $this->get_users($filter, $sort, $direction, $page, $perpage);
 
@@ -116,8 +115,7 @@ class view_renderer extends plugin_renderer_base {
         $buttons = [];
         $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1', 'type' => 'submit', 'name' => 'download_all', 'value' => 'Скачать все билеты', 'onclick' => 'return $(this).closest(\'div\').find(\'input[name=filter]\').hasClass(\'d-none\') || confirm(\'Нажмите кнопку отфильтровать, чтобы корректно выгрузить билеты. Продолжить все равно?\');']);
         $buttons[] = html_writer::empty_tag('input', ['class' => 'btn btn-primary mr-1 d-none', 'type' => 'submit', 'name' => 'download_selected', 'value' => 'Скачать выбранные билеты']);
-        $buttons = html_writer::div('','col-md-3 col-form-label').html_writer::div(implode('', $buttons), 'col-md-9 form-inline');
-        $output .= html_writer::div($buttons, 'form-group row');
+        $output .= html_writer::div(implode('', $buttons), 'my-2 form-inline');
 
         $output .= html_writer::end_tag('form');
 
@@ -164,27 +162,23 @@ class view_renderer extends plugin_renderer_base {
             $groupname = reset($groupsmenu);
             $output = $grouplabel.': '.$groupname;
         } else {
-            $output = html_writer::div(html_writer::label($grouplabel, 'menugroup'), 'col-md-3 col-form-label text-right');
+            $output = html_writer::label($grouplabel, 'menugroup text-left', true, ['style' => 'min-width: 120px; justify-content: end;']);
 
-            $output .= html_writer::start_tag('div', ['class' => 'col-md-9 form-inline']);
             $output .= html_writer::select($groupsmenu, 'group', $selected, false, ['class' => 'form-control m-r-1', 'onchange' => '$(this.form).find(\'input[name=filter]\').removeClass(\'d-none\')']);
-            $output.=html_writer::end_tag('div');
         }
 
-        return html_writer::div($output, 'form-group row');
+        return html_writer::div($output, 'my-2 form-inline');
     }
 
     protected function select_perpage($selected = 25): string
     {
         $options = [25, 50, 100, 250];
 
-        $output = html_writer::div(html_writer::label(get_string('perpage', 'moodle'), 'menuperpage'), 'col-md-3 col-form-label text-right');
+        $output = html_writer::label(get_string('perpage', 'moodle'), 'menuperpage');
 
-        $output .= html_writer::start_tag('div', ['class' => 'col-md-9 form-inline']);
         $output .= html_writer::select(array_combine($options, $options), 'perpage', $selected, false, ['class' => 'form-control', 'onchange' => 'this.form.submit()']);
-        $output.=html_writer::end_tag('div');
 
-        return html_writer::div($output, 'form-group row');
+        return html_writer::div($output, 'my-2 form-inline');
     }
 
     public function get_table(array $users = [], string $sort = 'lastcourseaccess', $direction='ASC') {
@@ -448,9 +442,7 @@ SQL;
             ];
         }
 
-        $output = html_writer::div($title, 'col-md-3 col-form-label text-right');
-
-        $output .= html_writer::start_tag('div', ['class' => 'col-md-9 form-inline']);
+        $output = html_writer::div($title, 'mr-2 text-right', ['style' => 'min-width: 120px;']);
 
         foreach ($dateformat as $key => $value) {
 
@@ -459,8 +451,7 @@ SQL;
 
         $output .= html_writer::tag('i', '', ['class' => 'icon fa fa-calendar fa-fw', 'title' => 'Календарь', 'role' => 'img']);
         $output .= html_writer::checkbox($name.'[enabled]', true, $selected['enabled'], 'Включить', ['onchange'=>'$(this.form).find(\'input[name=filter]\').removeClass(\'d-none\');$(this).closest(\'div\').find(\'select\').prop(\'disabled\', !this.checked)']);
-        $output.=html_writer::end_tag('div');
 
-        return html_writer::div($output, 'form-group row');
+        return html_writer::div($output, 'my-2 form-inline');
     }
 }
