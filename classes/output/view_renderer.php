@@ -42,16 +42,23 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class view_renderer extends plugin_renderer_base {
+/** @var moodle_url|null  */
+    private $baseurl = null;
+    /** @var context_course|null  */
+    private $context = null;
+    /** @var int|null  */
+    private $courseid = null;
+    /** @var \stdClass|null  */
+    private $course = null;
+    /** @var int|null  */
+    private $roleid = null;
 
-    private ?moodle_url $baseurl = null;
-    private ?context_course $context = null;
-    private ?int $courseid = null;
-    private ?\stdClass $course = null;
-    private ?int $roleid = null;
-
-    private ?settings $settings = null;
-    private array $quizzids = [];
-    private array $quizzes = [];
+    /** @var settings|null  */
+    private $settings = null;
+    /** @var array  */
+    private $quizzids = [];
+    /** @var array  */
+    private $quizzes = [];
 
     public function init_manager() {
         global $COURSE, $DB;
@@ -71,7 +78,9 @@ class view_renderer extends plugin_renderer_base {
         $this->quizzids = array_keys($contents);
 
         $this->quizzes = $DB->get_records_list('quiz', 'id', array_keys($contents));
-        usort($this->quizzes, fn ($a, $b) => ((int)$contents[$a->id]) <=> ((int)$contents[$b->id]));
+        usort($this->quizzes, function ($a, $b) use ($contents) {
+            return    ((int) $contents[$a->id]) <=> ((int) $contents[$b->id]);
+        });
 
     }
 

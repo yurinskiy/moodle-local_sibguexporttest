@@ -14,21 +14,32 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 require_once($CFG->dirroot . '/lib/filelib.php');
 
 class generator {
-    public bool $debug;
-    public int $userid;
-    public \stdClass $user;
-    public settings $settings;
-    public \stdClass $pdfdata;
-    public generator_renderer $renderer;
-    public question_renderer $qrenderer;
-    public array $quizzes;
+    /** @var bool  */
+    public $debug;
+    /** @var int  */
+    public  $userid;
+    /** @var \stdClass  */
+    public  $user;
+    /** @var settings  */
+    public  $settings;
+    /** @var \stdClass  */
+    public $pdfdata;
+    /** @var generator_renderer  */
+    public $renderer;
+    /** @var question_renderer  */
+    public $qrenderer;
+    /** @var array  */
+    public $quizzes;
 
-    public string $session_id;
-    public ?string $variant;
-
-    public ?string $path;
+    /** @var string  */
+    public $session_id;
+    /** @var string|null  */
+    public $variant;
+/** @var string|null  */
+    public $path;
     public $content;
-    public ?string $error;
+    /** @var string|null  */
+    public $error;
 
     public function __construct(int $courseid, int $userid, generator_renderer $renderer, question_renderer $qrenderer, bool $debug = false, string $session_id = null) {
         $this->debug = $debug;

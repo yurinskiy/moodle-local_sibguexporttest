@@ -24,8 +24,8 @@ namespace local_sibguexporttest;
 defined('MOODLE_INTERNAL') || die();
 
 class debug {
-    protected ?float $time = null;
-    protected ?int $memory = null;
+    protected $time = null;
+    protected $memory = null;
 
     public static function dump(...$vars)
     {

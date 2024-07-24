@@ -185,7 +185,9 @@ class settings extends \core\persistent {
         }
 
         $content = json_decode($this->get('content'), true) ?? [];
-        usort($content, fn($a, $b) => $a['order'] <=> $b['order']);
+        usort($content, function ($a, $b) {
+            return $a['order'] <=> $b['order'];
+        });
         $data->test_repeats = count($content);
         $data->test_id = array_column($content, 'id');
         $data->test_order = array_column($content, 'order');
@@ -205,8 +207,12 @@ class settings extends \core\persistent {
 
     public function get_selected_quizzes() {
         $content = $this->get_contents();
-        usort($content, fn($a, $b) => $a['order'] <=> $b['order']);
+        usort($content, function ($a, $b) {
+            return $a['order'] <=> $b['order'];
+        });
 
-        return array_map(fn ($a) => $a['id'], $content);
+        return array_map(function ($a) {
+            return $a['id'];
+        }, $content);
     }
 }

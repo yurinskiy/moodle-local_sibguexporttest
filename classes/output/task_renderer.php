@@ -44,8 +44,8 @@ use quiz_attempt;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class task_renderer extends plugin_renderer_base {
-
-    private ?moodle_url $baseurl = null;
+/** @var moodle_url|null  */
+    private $baseurl = null;
 
     public function init_baseurl(moodle_url $url) {
         $this->baseurl = $url;

@@ -106,7 +106,9 @@ class course_settings_form extends \moodleform {
             'other'=> 'clear, html'
         ];
 
-        array_walk($attobuttons, fn (&$value, $key) => $value = $key . '=' . $value);
+        array_walk($attobuttons, function (&$value, $key) {
+            return $value = $key . '=' . $value;
+        });
 
         return [
             'maxfiles'  => 5,
