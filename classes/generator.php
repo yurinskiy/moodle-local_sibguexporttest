@@ -267,8 +267,6 @@ HTML;
                 $output .=  \html_writer::start_tag('table', ['class' => 'questions ' . $this->getDebugClass()]);
                 $output .= $this->print_question($attempt, $questionno, $slot);
                 $output .= \html_writer::end_tag('table');
-
-                $questionno++;
             }
         }
 
@@ -302,17 +300,16 @@ HTML;
         return $content;
     }
 
-    public function print_question(\quiz_attempt $attempt, $number, $slot) {
+    public function print_question(\quiz_attempt $attempt, &$number, $slot) {
         $displayoptions = clone($attempt->get_display_options(true));
         $question_attempt = $attempt->get_question_attempt($slot);
 
         $content = \html_writer::start_tag('tr');
-        $content .= \html_writer::tag('th', \html_writer::nonempty_tag('i', $number, ['class' => 'question-number']), ['scope' => 'row']);
-        $content .= \html_writer::tag('td', $this->qrenderer->question_gen(
-                $question_attempt,
-                $displayoptions,
-                $number
-            ));
+        $content .= $this->qrenderer->question_gen(
+            $question_attempt,
+            $displayoptions,
+            $number
+        );
         $content .= \html_writer::end_tag('tr');
 
         return $content;

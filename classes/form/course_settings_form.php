@@ -62,7 +62,7 @@ class course_settings_form extends \moodleform {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
-        $max_tests = 2;
+        $max_tests = 10;
 
         $quizzes = $this->get_quizzes();
         $used_test_id = [];
