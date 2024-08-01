@@ -53,21 +53,52 @@ class question_renderer extends \core_question_renderer {
         $options = clone($options);
         $options->marks = question_display_options::MAX_ONLY;
 
-        if ($this->hasCorrectAnswer($qtoutput)) {
+        return $this->getContent($qa, $qtoutput, $options, $number);
+    }
+
+    protected function info(question_attempt $qa, $behaviouroutput, $qtoutput, question_display_options $options, $number) {
+        $output = '';
+        $output .= $this->number($number);
+        $output .= $this->mark_summary($qa, $behaviouroutput, $options);
+
+        return $output;
+    }
+
+    protected function hasCorrectAnswer(\qtype_renderer $qtoutput): bool
+    {
+        return method_exists($qtoutput, 'correct_response') && (new \ReflectionMethod($qtoutput, 'correct_response'))->isPublic();
+    }
+
+    protected function getHeader(string $number = null): string
+    {
+        if ($number) {
             $output = \html_writer::tag('th', \html_writer::nonempty_tag('i', $number, ['class' => 'question-number']), ['scope' => 'row']);
             $output .= \html_writer::start_tag('td');
-            $number++;
         } else {
             $output = \html_writer::start_tag('td', ['scope' => 'row', 'colspan' => 2]);
         }
 
-        $output .= html_writer::start_div('que ' . $qa->get_question(false)->get_type_name() .' '.$qa->get_behaviour_name());
+        return $output;
+    }
 
+    protected function getContent(question_attempt $qa, $qtoutput, question_display_options $options, &$number): string
+    {
         $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
 
+        $hasNumber = true;
+
         switch (get_class($qtoutput)) {
+            case 'qtype_description_renderer':
+                $hasNumber = false;
+                break;
             case 'qtype_shortanswer_renderer':
                 $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock form-inline">')).'</div>';
+
+                preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
+                $correctAnswer = html_writer::nonempty_tag('div', sprintf(
+                    'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+                    \implode(' ', $matches[1] ?? [])
+                ), ['class' => 'rightanswer']);
                 break;
             case 'qtype_multianswer_renderer':
                 /** @var \simple_html_dom $html */
@@ -108,35 +139,54 @@ class question_renderer extends \core_question_renderer {
 
                 $content = $html->save();
                 break;
+            case 'qtype_essay_renderer':
+                /** @var \simple_html_dom $html */
+                $html = str_get_html($content);
+
+                $deleted = [];
+
+                foreach ($html->find('.answer') as $answer) {
+                    $deleted[] = $answer;
+                }
+
+                foreach ($html->find('.attachments') as $attachment) {
+                    $deleted[] = $attachment;
+                }
+
+                foreach ($deleted as $delete) {
+                    $delete->remove();
+                }
+
+                $content = $html->save();
+                break;
+            default:
+                if ($this->hasCorrectAnswer($qtoutput)) {
+                    $correctAnswer = html_writer::nonempty_tag('div', $qtoutput->correct_response($qa), ['class' => 'rightanswer']);
+                }
+                break;
         }
 
-        if ($this->hasCorrectAnswer($qtoutput)) {
-            $content .= html_writer::nonempty_tag('div', $qtoutput->correct_response($qa), ['class' => 'rightanswer']);
+        if ($number > 4) {
+            echo htmlentities($content);die;
         }
+
+        $content .= $correctAnswer ?? '';
 
         if (strpos($content, 'checked="checked"')) {
             $content = str_replace('checked="checked"', '', $content);
         }
 
+        $output = $this->getHeader($hasNumber ? $number++ : '');
+        $output .= html_writer::start_div('que ' . $qa->get_question(false)->get_type_name() .' '.$qa->get_behaviour_name());
         $output .= $content;
-
         $output .= html_writer::end_tag('div');
-        $output .= html_writer::end_tag('div');
-        $output .= html_writer::end_tag('td');
+        $output .= $this->getFooter();
 
         return $output;
     }
 
-    protected function info(question_attempt $qa, $behaviouroutput, $qtoutput, question_display_options $options, $number) {
-        $output = '';
-        $output .= $this->number($number);
-        $output .= $this->mark_summary($qa, $behaviouroutput, $options);
-
-        return $output;
-    }
-
-    protected function hasCorrectAnswer(\qtype_renderer $qtoutput): bool
+    protected function getFooter(): string
     {
-        return method_exists($qtoutput, 'correct_response') && (new \ReflectionMethod($qtoutput, 'correct_response'))->isPublic();
+        return html_writer::end_tag('td');
     }
 }
