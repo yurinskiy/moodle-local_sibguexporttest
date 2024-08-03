@@ -30,7 +30,6 @@ require_once($CFG->libdir . '/questionlib.php');
 require_once(__DIR__ . '/../../simple_html_dom.php');
 
 use html_writer;
-use local_sibguexporttest\debug;
 use question_attempt;
 use question_display_options;
 
@@ -64,15 +63,14 @@ class question_renderer extends \core_question_renderer {
         return $output;
     }
 
-    protected function hasCorrectAnswer(\qtype_renderer $qtoutput): bool
-    {
+    protected function hasCorrectAnswer(\qtype_renderer $qtoutput): bool {
         return method_exists($qtoutput, 'correct_response') && (new \ReflectionMethod($qtoutput, 'correct_response'))->isPublic();
     }
 
-    protected function getHeader(string $number = null): string
-    {
+    protected function getHeader(string $number = null): string {
         if ($number) {
-            $output = \html_writer::tag('th', \html_writer::nonempty_tag('i', $number, ['class' => 'question-number']), ['scope' => 'row']);
+            $output = \html_writer::tag('th', \html_writer::nonempty_tag('i', $number, ['class' => 'question-number']),
+                ['scope' => 'row']);
             $output .= \html_writer::start_tag('td');
         } else {
             $output = \html_writer::start_tag('td', ['scope' => 'row', 'colspan' => 2]);
@@ -81,93 +79,33 @@ class question_renderer extends \core_question_renderer {
         return $output;
     }
 
-    protected function getContent(question_attempt $qa, $qtoutput, question_display_options $options, &$number): string
-    {
-        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
-
+    protected function getContent(question_attempt $qa, $qtoutput, question_display_options $options, &$number): string {
         $hasNumber = true;
 
         switch (get_class($qtoutput)) {
             case 'qtype_description_renderer':
+                $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
                 $hasNumber = false;
                 break;
             case 'qtype_shortanswer_renderer':
-                $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock form-inline">')).'</div>';
-
-                preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
-                $correctAnswer = html_writer::nonempty_tag('div', sprintf(
-                    'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
-                    \implode(' ', $matches[1] ?? [])
-                ), ['class' => 'rightanswer']);
+                [$content, $correctAnswer] = $this->prepare_qtype_shortanswer_renderer($qa, $qtoutput, $options);
                 break;
             case 'qtype_multianswer_renderer':
-                /** @var \simple_html_dom $html */
-                $html = str_get_html($content);
-
-                $deleted = [];
-
-                $index = 0;
-
-                /** @var \simple_html_dom_node|null $node */
-                while ($node = $html->find('.subquestion', $index)) {
-                    $node->tag = 'div';
-                    $node->setAttribute('style', 'border: 1px solid black; display: inline-block');
-
-                    /** @var \simple_html_dom_node $select */
-                    $select = $node->find('select', 0);
-                    $select->tag = 'div';
-                    foreach ($select->find('option') as $option) {
-                        $option->tag = 'span';
-                        $option->innertext .= '<br>';
-
-                        if (empty($option->attr['value'])) {
-                            $deleted[] = $option;
-                        }
-                    }
-
-                    $node->find('label', 0)->innertext = 'Выберите ответ: ';
-                    $correct = $node->find('.feedbackspan', 0);
-
-                    $correct->innertext = mb_substr($correct->innertext, mb_stripos($correct->innertext, 'Правильный ответ:')).'<br>';
-
-                    $index++;
-                }
-
-                foreach ($deleted as $delete) {
-                    $delete->remove();
-                }
-
-                $content = $html->save();
+                [$content, $correctAnswer] = $this->prepare_qtype_multianswer_renderer($qa, $qtoutput, $options, $number);
                 break;
             case 'qtype_essay_renderer':
-                /** @var \simple_html_dom $html */
-                $html = str_get_html($content);
-
-                $deleted = [];
-
-                foreach ($html->find('.answer') as $answer) {
-                    $deleted[] = $answer;
-                }
-
-                foreach ($html->find('.attachments') as $attachment) {
-                    $deleted[] = $attachment;
-                }
-
-                foreach ($deleted as $delete) {
-                    $delete->remove();
-                }
-
-                $content = $html->save();
+                [$content, $correctAnswer] = $this->prepare_qtype_essay_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_match_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_match_renderer($qa, $qtoutput, $options);
                 break;
             default:
+                $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
                 if ($this->hasCorrectAnswer($qtoutput)) {
                     $correctAnswer = html_writer::nonempty_tag('div', $qtoutput->correct_response($qa), ['class' => 'rightanswer']);
                 }
                 break;
-        }
-
-        if ($number > 4) {
-            echo htmlentities($content);die;
         }
 
         $content .= $correctAnswer ?? '';
@@ -177,7 +115,7 @@ class question_renderer extends \core_question_renderer {
         }
 
         $output = $this->getHeader($hasNumber ? $number++ : '');
-        $output .= html_writer::start_div('que ' . $qa->get_question(false)->get_type_name() .' '.$qa->get_behaviour_name());
+        $output .= html_writer::start_div('que ' . $qa->get_question(false)->get_type_name() . ' ' . $qa->get_behaviour_name());
         $output .= $content;
         $output .= html_writer::end_tag('div');
         $output .= $this->getFooter();
@@ -185,8 +123,185 @@ class question_renderer extends \core_question_renderer {
         return $output;
     }
 
-    protected function getFooter(): string
-    {
+    protected function getFooter(): string {
         return html_writer::end_tag('td');
+    }
+
+    private function prepare_qtype_match_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        /** @var \simple_html_dom $html */
+        $html = str_get_html($content);
+
+        $questions = [];
+        $answers = [];
+
+        $rows = $html->find('.answer tr');
+
+        foreach ($rows as $row) {
+            /** @var \simple_html_dom_node $item */
+            foreach ($row->find('td.text') as $item) {
+                if (in_array($item->innertext(), $questions)) {
+                    continue;
+                }
+
+                $questions[] = $item->innertext();
+                echo $item;
+            }
+
+            /** @var \simple_html_dom_node $option */
+            foreach ($row->find('option') as $option) {
+                if (empty($option->attr['value'])) {
+                    continue;
+                }
+
+                if (in_array($option->innertext(), $answers)) {
+                    continue;
+                }
+
+                $answers[] = $option->innertext();
+                echo $option;
+            }
+        }
+
+        /** @var \simple_html_dom_node $table */
+        $table = $html->find('.answer', 0);
+        $table->find('tbody', 0)->remove();
+
+        for ($i = 0; $i < max(count($questions), count($answers)); $i++) {
+            /** @var \simple_html_dom_node $td1 */
+            $td1 = $html->createElement('td', $questions[$i] ?? '');
+            $td1->setAttribute('class', 'text');
+
+            /** @var \simple_html_dom_node $td2 */
+            $td2 = $html->createElement('td');
+            $td2->setAttribute('style', 'width: 32px');
+
+            /** @var \simple_html_dom_node $td3 */
+            $td3 = $html->createElement('td', $answers[$i] ?? '');
+            $td3->setAttribute('class', 'control');
+
+            /** @var \simple_html_dom_node $tr */
+            $tr = $html->createElement('tr');
+            $tr->appendChild($td1);
+            $tr->appendChild($td2);
+            $tr->appendChild($td3);
+            $table->appendChild($tr);
+        }
+
+        return [
+            $html->save(),
+            html_writer::nonempty_tag('div', $qtoutput->correct_response($qa), ['class' => 'rightanswer'])
+        ];
+    }
+
+    private function prepare_qtype_essay_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        /** @var \simple_html_dom $html */
+        $html = str_get_html($content);
+
+        $deleted = [];
+
+        foreach ($html->find('.answer') as $answer) {
+            $deleted[] = $answer;
+        }
+
+        foreach ($html->find('.attachments') as $attachment) {
+            $deleted[] = $attachment;
+        }
+
+        foreach ($deleted as $delete) {
+            $delete->remove();
+        }
+
+        return [
+            $html->save(),
+            null
+        ];
+    }
+
+    private function prepare_qtype_multianswer_renderer(question_attempt $qa, $qtoutput, question_display_options $options, $number): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        /** @var \simple_html_dom $html */
+        $html = str_get_html($content);
+
+        /** @var \simple_html_dom_node[] $questions */
+        $questions = [];
+
+        $deleted = [];
+
+        $index = 0;
+
+        /** @var \simple_html_dom_node|null $node */
+        while ($node = $html->find('.subquestion', $index)) {
+            $node->tag = 'div';
+            $node->setAttribute('style', 'border: 1px solid black; display: inline-block; padding: 2px 10px');
+
+            /** @var \simple_html_dom_node $select */
+            $select = $node->find('select', 0);
+            $select->tag = 'div';
+            foreach ($select->find('option') as $option) {
+                $option->tag = 'span';
+                $option->innertext .= '<br>';
+
+                if (empty($option->attr['value'])) {
+                    $deleted[] = $option;
+                }
+            }
+
+            $node->find('label', 0)->innertext = 'Выберите ответ: <br>';
+            $correct = $node->find('.feedbackspan', 0);
+
+            $correct->innertext = mb_substr($correct->innertext, mb_stripos($correct->innertext, 'Правильный ответ:')) . '<br>';
+
+            preg_match_all('/Правильный ответ:\s{0,}(.+)/', $correct->innertext, $matches);
+            $correct->innertext = html_writer::nonempty_tag('div', sprintf(
+                'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+                \implode(' ', $matches[1] ?? [])
+            ), ['class' => 'rightanswer']);
+
+            $index++;
+
+            $questions[] = clone $node;
+            $node->innertext = $number . '.' . count($questions);
+        }
+
+        foreach ($deleted as $delete) {
+            $delete->remove();
+        }
+
+        $content = $html->save();
+        foreach ($questions as $key => $question) {
+            $content .= \html_writer::end_tag('tr');
+            $content .= \html_writer::end_tag('table');
+            $content .=  \html_writer::start_tag('table', ['class' => 'questions ']);
+            $content .= \html_writer::start_tag('tr');
+            $content .= $this->getFooter();
+            $content .= $this->getHeader($number . '.' . ($key+1));
+            $content .= html_writer::start_div('que ' . $qa->get_question(false)->get_type_name() . ' ' . $qa->get_behaviour_name());
+            $content .= $question->text();
+            $content .= html_writer::end_tag('div');
+        }
+
+        return [
+            $content,
+            null
+        ];
+    }
+
+    private function prepare_qtype_shortanswer_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock form-inline">')) . '</div>';
+
+        preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
+        $correctAnswer = html_writer::nonempty_tag('div', sprintf(
+            'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+            \implode(' ', $matches[1] ?? [])
+        ), ['class' => 'rightanswer']);
+
+        return [$content, $correctAnswer];
     }
 }
