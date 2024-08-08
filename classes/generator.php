@@ -38,6 +38,7 @@ class generator {
 /** @var string|null  */
     public $path;
     public $content;
+    public $rawcontent;
     /** @var string|null  */
     public $error;
 
@@ -334,6 +335,8 @@ HTML;
 
         $pdf->addPage($first_page);
         $pdf->addPage($test_page);
+
+        $this->rawcontent = $test_page;
 
         if ($this->debug) {
             $pdf->addPage($this->get_font_size_page());

@@ -72,11 +72,11 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
             switch ($export->get('type')) {
                 case 'all':
                 case 'selected':
-                    $file = $this->generate_all($export, $user, $course);
+                    $file = $this->generate_all($export, $user, $course, $data->session_id ?? null);
                     $title = '';
                     break;
                 case 'list':
-                    $file = $this->generate_list($export, $user, $course);
+                    $file = $this->generate_list($export, $user, $course, $data->session_id ?? null);
                     $title = '';
                     break;
                 default:
@@ -100,7 +100,7 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
         mtrace("My task finished");
     }
 
-    private function generate_all(export $export, \stdClass $user, \stdClass $course) : \stored_file {
+    private function generate_all(export $export, \stdClass $user, \stdClass $course, $session_id = null) : \stored_file {
         global $PAGE;
 
         /** @var \local_sibguexporttest\output\generator_renderer $renderer */
@@ -115,7 +115,13 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
 
             $userids = json_decode($export->get('userids'));
             foreach ($userids as $userid) {
-                $generator = new \local_sibguexporttest\generator($course->id, $userid, $renderer, $qrenderer, false, $data->session_id ?? null);
+                $generator = new \local_sibguexporttest\generator($course->id, $userid, $renderer, $qrenderer, false, $session_id);
+                mtrace('Filename: ' . $generator->get_filename());
+
+                if (!empty($generator->get_error())) {
+                    mtrace('Error: ' . print_r($generator->get_error(), true));
+                }
+
                 $ziparchive->add_file_from_string($generator->get_filename(), $generator->get_content());
             }
             $ziparchive->close();
@@ -142,7 +148,7 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
         return $fs->create_file_from_pathname($file, $zippath);
     }
 
-    private function generate_list(export $export, \stdClass $userto, \stdClass $course) : \stored_file {
+    private function generate_list(export $export, \stdClass $userto, \stdClass $course, $session_id = null) : \stored_file {
         global $PAGE;
 
         /** @var \local_sibguexporttest\output\generator_renderer $renderer */
@@ -156,14 +162,14 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
         $userids = json_decode($export->get('userids'));
         foreach ($userids as $userid) {
             $user = \core_user::get_user($userid);
-            $generator = new \local_sibguexporttest\generator($course->id, $userid, $renderer, $qrenderer, false, $data->session_id ?? null);
+            $generator = new \local_sibguexporttest\generator($course->id, $userid, $renderer, $qrenderer, false, $session_id);
 
             fputcsv($fp, [$user->username, \implode(' ', [$user->lastname, $user->firstname]), str_replace('Вариант ', '', $generator->get_variant())]);
         }
         fclose($fp);
 
         // You probably don't need attachments but if you do, here is how to add one
-        $usercontext = \context_user::instance($user->id);
+        $usercontext = \context_user::instance($userto->id);
         $file = new \stdClass();
         $file->contextid = $usercontext->id;
         $file->component = 'local_sibguexporttest';
