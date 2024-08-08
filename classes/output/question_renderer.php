@@ -146,7 +146,6 @@ class question_renderer extends \core_question_renderer {
                 }
 
                 $questions[] = $item->innertext();
-                echo $item;
             }
 
             /** @var \simple_html_dom_node $option */
@@ -160,7 +159,6 @@ class question_renderer extends \core_question_renderer {
                 }
 
                 $answers[] = $option->innertext();
-                echo $option;
             }
         }
 

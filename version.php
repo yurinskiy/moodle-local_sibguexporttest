@@ -23,11 +23,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_sibguexporttest';
-$plugin->version = 2024062602;
+$plugin->version = 2024080800;
 $plugin->requires = 2021051700.00;
 $plugin->supported = [311, 400];
 $plugin->incompatible = 401;
-$plugin->maturity = MATURITY_ALPHA;
+$plugin->maturity = MATURITY_RC;
 $plugin->dependencies = [
     'mod_quiz' => 2021051700,
     'editor_atto' => 2021051700,
