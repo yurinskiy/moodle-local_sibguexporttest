@@ -196,9 +196,6 @@ class question_renderer extends \core_question_renderer {
     }
 
     private function prepare_qtype_essay_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
-        $options = clone $options;
-        $options->readonly = true;
-
         $content = html_writer::div(
             html_writer::tag('div', $qa->get_question()->format_questiontext($qa), array('class' => 'qtext')),
             'formulation clearfix'
