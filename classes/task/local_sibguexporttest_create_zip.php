@@ -62,8 +62,6 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
         mtrace($exportid);
 
         $export = export::get_record(['id' => $exportid]);
-        var_dump($export);
-
         $courseid = $export->get('courseid');
         $course = $DB->get_record('course', ['id' => $courseid]);
         $user =\core_user::get_user($this->get_userid());
@@ -115,6 +113,7 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
 
             $userids = json_decode($export->get('userids'));
             foreach ($userids as $userid) {
+                mtrace('User ID: ' . $userid);
                 $generator = new \local_sibguexporttest\generator($course->id, $userid, $renderer, $qrenderer, false, $session_id);
                 mtrace('Filename: ' . $generator->get_filename());
 
