@@ -73,15 +73,21 @@ class view_renderer extends plugin_renderer_base {
         $this->settings = settings::get_by_course($COURSE->id);
 
         $contents = $this->settings->get_contents();
+        if (empty($contents)) {
+            return;
+        }
+
         $contents = array_column($contents, 'order','id');
 
         $this->quizzids = array_keys($contents);
+        if (empty($this->quizzids)) {
+            return;
+        }
 
         $this->quizzes = $DB->get_records_list('quiz', 'id', array_keys($contents));
         usort($this->quizzes, function ($a, $b) use ($contents) {
-            return    ((int) $contents[$a->id]) <=> ((int) $contents[$b->id]);
+            return ((int) $contents[$a->id]) <=> ((int) $contents[$b->id]);
         });
-
     }
 
     public function init_baseurl(moodle_url $url) {
@@ -92,6 +98,10 @@ class view_renderer extends plugin_renderer_base {
      * @return string HTML to output.
      */
     public function view(array $filter = [], string $sort = 'lastcourseaccess', $direction='ASC', $page = 0, $perpage = 25): string {
+
+        if (empty($this->quizzes)) {
+            return html_writer::div('Необходимо <a href="/local/sibguexporttest/index.php?courseid=414&action=settings">настроить</a> модуль в курсе!', 'alert alert-danger');
+        }
 
         ['group' => $selectedgroup, 'lastattempt_sdt' => $lastattempt_sdt, 'lastattempt_edt' => $lastattempt_edt] = $filter;
 

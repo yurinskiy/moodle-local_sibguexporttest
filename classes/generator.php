@@ -58,7 +58,11 @@ class generator {
         $this->content = null;
         $this->error = null;
 
-        $this->generate();
+        try {
+            $this->generate();
+        } catch (\Throwable $exception) {
+            $this->error = $exception->getFile().'#L'.$exception->getLine().': '.$exception->getMessage();
+        }
     }
 
     private function getDebugClass(): string

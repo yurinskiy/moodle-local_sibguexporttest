@@ -118,7 +118,7 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
                 mtrace('Filename: ' . $generator->get_filename());
 
                 if (!empty($generator->get_error())) {
-                    mtrace('Error: ' . print_r($generator->get_error(), true));
+                    mtrace('Error(user_id='.$userid.'): ' . print_r($generator->get_error(), true));
                 }
 
                 $ziparchive->add_file_from_string($generator->get_filename(), $generator->get_content());
