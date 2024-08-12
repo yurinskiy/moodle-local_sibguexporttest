@@ -162,29 +162,31 @@ class question_renderer extends \core_question_renderer {
             }
         }
 
-        /** @var \simple_html_dom_node $table */
+        /** @var \simple_html_dom_node|null $table */
         $table = $html->find('.answer', 0);
-        $table->find('tbody', 0)->remove();
+        if ($table) {
+            $table->find('tbody', 0)->remove();
 
-        for ($i = 0; $i < max(count($questions), count($answers)); $i++) {
-            /** @var \simple_html_dom_node $td1 */
-            $td1 = $html->createElement('td', $questions[$i] ?? '');
-            $td1->setAttribute('class', 'text');
+            for ($i = 0; $i < max(count($questions), count($answers)); $i++) {
+                /** @var \simple_html_dom_node $td1 */
+                $td1 = $html->createElement('td', $questions[$i] ?? '');
+                $td1->setAttribute('class', 'text');
 
-            /** @var \simple_html_dom_node $td2 */
-            $td2 = $html->createElement('td');
-            $td2->setAttribute('style', 'width: 32px');
+                /** @var \simple_html_dom_node $td2 */
+                $td2 = $html->createElement('td');
+                $td2->setAttribute('style', 'width: 32px');
 
-            /** @var \simple_html_dom_node $td3 */
-            $td3 = $html->createElement('td', $answers[$i] ?? '');
-            $td3->setAttribute('class', 'control');
+                /** @var \simple_html_dom_node $td3 */
+                $td3 = $html->createElement('td', $answers[$i] ?? '');
+                $td3->setAttribute('class', 'control');
 
-            /** @var \simple_html_dom_node $tr */
-            $tr = $html->createElement('tr');
-            $tr->appendChild($td1);
-            $tr->appendChild($td2);
-            $tr->appendChild($td3);
-            $table->appendChild($tr);
+                /** @var \simple_html_dom_node $tr */
+                $tr = $html->createElement('tr');
+                $tr->appendChild($td1);
+                $tr->appendChild($td2);
+                $tr->appendChild($td3);
+                $table->appendChild($tr);
+            }
         }
 
         return [
@@ -237,15 +239,17 @@ class question_renderer extends \core_question_renderer {
             $node->tag = 'div';
             $node->setAttribute('style', 'border: 1px solid black; display: inline-block; padding: 2px 10px');
 
-            /** @var \simple_html_dom_node $select */
+            /** @var \simple_html_dom_node|null $select */
             $select = $node->find('select', 0);
-            $select->tag = 'div';
-            foreach ($select->find('option') as $option) {
-                $option->tag = 'span';
-                $option->innertext .= '<br>';
+            if ($select) {
+                $select->tag = 'div';
+                foreach ($select->find('option') as $option) {
+                    $option->tag = 'span';
+                    $option->innertext .= '<br>';
 
-                if (empty($option->attr['value'])) {
-                    $deleted[] = $option;
+                    if (empty($option->attr['value'])) {
+                        $deleted[] = $option;
+                    }
                 }
             }
 
