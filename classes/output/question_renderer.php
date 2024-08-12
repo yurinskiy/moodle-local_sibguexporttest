@@ -196,27 +196,16 @@ class question_renderer extends \core_question_renderer {
     }
 
     private function prepare_qtype_essay_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
-        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+        $options = clone $options;
+        $options->readonly = true;
 
-        /** @var \simple_html_dom $html */
-        $html = str_get_html($content);
-
-        $deleted = [];
-
-        foreach ($html->find('.answer') as $answer) {
-            $deleted[] = $answer;
-        }
-
-        foreach ($html->find('.attachments') as $attachment) {
-            $deleted[] = $attachment;
-        }
-
-        foreach ($deleted as $delete) {
-            $delete->remove();
-        }
+        $content = html_writer::div(
+            html_writer::tag('div', $qa->get_question()->format_questiontext($qa), array('class' => 'qtext')),
+            'formulation clearfix'
+        );
 
         return [
-            $html->save(),
+            $content,
             null
         ];
     }
