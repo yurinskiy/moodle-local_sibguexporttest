@@ -124,7 +124,12 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
 
                 $ziparchive->add_file_from_string($generator->get_filename(), $generator->get_content());
             }
-            $ziparchive->close();
+            $res = $ziparchive->close();
+
+            if ($res === true)
+                mtrace('success zip.');
+            else
+                mtrace('failed zip: ' . $this->GetZipErrMessage($res));
         } else {
             throw new \moodle_exception('error open file ' . $zippath);
         }
@@ -206,5 +211,38 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
 
         // Actually send the message
         return message_send($message);
+    }
+
+    private function GetZipErrMessage($errno)
+    {
+        if ($errno===true) return '';
+        switch($errno)
+        {
+            case 0: return 'No error'; 								//ZIP_ER_OK
+            case 1: return 'Multi-disk zip archives not supported'; //ZIP_ER_MULTIDISK
+            case 2: return 'Renaming temporary file failed'; 		//ZIP_ER_RENAME
+            case 3: return 'Closing zip archive failed'; 			//ZIP_ER_CLOSE
+            case 4: return 'Seek error'; 							//ZIP_ER_SEEK
+            case 5: return 'Read error'; 							//ZIP_ER_READ
+            case 6: return 'Write error'; 							//ZIP_ER_WRITE
+            case 7: return 'CRC error'; 							//ZIP_ER_CRC
+            case 8: return 'Containing zip archive was closed'; 	//ZIP_ER_ZIPCLOSED
+            case 9: return 'No such file'; 							//ZIP_ER_NOENT
+            case 10: return 'File already exists'; 					//ZIP_ER_EXISTS
+            case 11: return 'Can\'t open file'; 					//ZIP_ER_OPEN
+            case 12: return 'Failure to create temporary file'; 	//ZIP_ER_TMPOPEN
+            case 13: return 'Zlib error'; 							//ZIP_ER_ZLIB
+            case 14: return 'Malloc failure'; 						//ZIP_ER_MEMORY
+            case 15: return 'Entry has been changed'; 				//ZIP_ER_CHANGED
+            case 16: return 'Compression method not supported'; 	//ZIP_ER_COMPNOTSUPP
+            case 17: return 'Premature EOF'; 						//ZIP_ER_EOF
+            case 18: return 'Invalid argument'; 					//ZIP_ER_INVAL
+            case 19: return 'Not a zip archive'; 					//ZIP_ER_NOZIP
+            case 20: return 'Internal error'; 						//ZIP_ER_INTERNAL
+            case 21: return 'Zip archive inconsistent'; 			//ZIP_ER_INCONS
+            case 22: return 'Can\'t remove file'; 					//ZIP_ER_REMOVE
+            case 23: return 'Entry has been deleted'; 				//ZIP_ER_DELETED
+        }
+        return 'Unknow zip error';
     }
 }
