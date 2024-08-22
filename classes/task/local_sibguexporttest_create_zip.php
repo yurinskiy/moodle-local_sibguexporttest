@@ -109,7 +109,7 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
         $zippath = tempnam(sys_get_temp_dir(), 'local_sibguexporttest');
         $ziparchive = new zip_archive();
         if ($ziparchive->open($zippath, \file_archive::CREATE)) {
-            $ziparchive->add_file_from_string('README.txt', 'Сформирована выгрузка по курсу "' . $course->shortname . '" от ' . date('Y.m.d H:i:s'));
+            $ziparchive->add_file_from_string('README.txt', 'Сформирована выгрузка по курсу "' . $course->shortname . '" от ' . date('Y.m.d H:i:s').PHP_EOL.$export->get('userids'));
 
             $userids = json_decode($export->get('userids'));
             foreach ($userids as $userid) {
