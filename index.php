@@ -54,6 +54,13 @@ switch ($action) {
         $render = $PAGE->get_renderer('local_sibguexporttest', 'settings');
         $output = $render->view();
         break;
+    case 'ticket':
+        $PAGE->set_url('/local/sibguexporttest/index.php', ['courseid' => $courseid, 'action' => $action]);
+
+        $title = get_string('navigation_generator', 'local_sibguexporttest');
+        $render = $PAGE->get_renderer('local_sibguexporttest', 'ticket');
+        $output = $render->view();
+        break;
     case 'view':
         # filters
         $group = optional_param('group', '', PARAM_INT);

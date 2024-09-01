@@ -118,13 +118,13 @@ function local_sibguexporttest_extend_settings_navigation(settings_navigation $s
 
     // Генератор билетов
     $urltext = get_string('navigation_generator', 'local_sibguexporttest');
-    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'generate']);
+    $url = new moodle_url('/local/sibguexporttest/index.php',['courseid' => $COURSE->id, 'action' => 'ticket']);
     $node = $coursereportsnode->create(
         $urltext,
         $url,
         navigation_node::NODETYPE_LEAF,
         null,
-        'sibguexporttest_generator',
+        'sibguexporttest_ticket',
         new pix_icon('i/permissions', $urltext, 'core')
     );
     $mainnode->add_node($node);

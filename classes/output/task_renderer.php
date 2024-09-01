@@ -86,7 +86,7 @@ class task_renderer extends plugin_renderer_base {
         $output .= html_writer::tag('th', 'Вид задания') . "\n";
         $output .= html_writer::tag('th', 'Дата создания') . "\n";
         $output .= html_writer::tag('th', 'Дата обработки') . "\n";
-        $output .= html_writer::tag('th', 'Описание') . "\n";
+        $output .= html_writer::tag('th', 'Ошибки') . "\n";
         $output .= html_writer::tag('th', 'Действия') . "\n";
 
 
@@ -110,6 +110,9 @@ class task_renderer extends plugin_renderer_base {
                     break;
                 case 'list':
                     $type = 'Список билетов';
+                    break;
+                case 'ticket':
+                    $type = 'Генерация ЭБ';
                     break;
                 default:
                     $type = 'Неизвестный тип';

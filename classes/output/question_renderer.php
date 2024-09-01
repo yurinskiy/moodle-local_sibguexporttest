@@ -242,13 +242,15 @@ class question_renderer extends \core_question_renderer {
             $node->find('label', 0)->innertext = 'Выберите ответ: <br>';
             $correct = $node->find('.feedbackspan', 0);
 
-            $correct->innertext = mb_substr($correct->innertext, mb_stripos($correct->innertext, 'Правильный ответ:')) . '<br>';
+            if (isset($correct->innertext)) {
+                $correct->innertext = mb_substr($correct->innertext, mb_stripos($correct->innertext, 'Правильный ответ:')) . '<br>';
 
-            preg_match_all('/Правильный ответ:\s{0,}(.+)/', $correct->innertext, $matches);
-            $correct->innertext = html_writer::nonempty_tag('div', sprintf(
-                'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
-                \implode(' ', $matches[1] ?? [])
-            ), ['class' => 'rightanswer']);
+                preg_match_all('/Правильный ответ:\s{0,}(.+)/', $correct->innertext, $matches);
+                $correct->innertext = html_writer::nonempty_tag('div', sprintf(
+                    'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+                    \implode(' ', $matches[1] ?? [])
+                ), ['class' => 'rightanswer']);
+            }
 
             $index++;
 

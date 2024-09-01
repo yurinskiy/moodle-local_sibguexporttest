@@ -188,6 +188,46 @@ function xmldb_local_sibguexporttest_upgrade($oldversion): bool
         upgrade_plugin_savepoint(true, 2024062600, 'local', 'sibguexporttest');
     }
 
+    if ($oldversion < 2024090100) {
+
+        // Define table local_sibguexporttest_config to be created.
+        $table = new xmldb_table('local_sibguexporttest_config');
+
+        // Adding fields to table local_sibguexporttest_config.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('type', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, 'ticket');
+        $table->add_field('headerpage', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('headerpageformat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('footerpage', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('footerpageformat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('headerbodypage', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('headerbodypageformat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('footerbodypage', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('footerbodypageformat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('signmasterpage', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('signmasterpageformat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('content', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table local_sibguexporttest_config.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('usermodified', XMLDB_KEY_FOREIGN, ['usermodified'], 'user', ['id']);
+        $table->add_key('courseid', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+
+        // Adding indexes to table local_sibguexporttest_config.
+        $table->add_index('type_courseid', XMLDB_INDEX_NOTUNIQUE, ['courseid', 'type']);
+
+        // Conditionally launch create table for local_sibguexporttest_config.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sibguexporttest savepoint reached.
+        upgrade_plugin_savepoint(true, 2024090100, 'local', 'sibguexporttest');
+    }
 
     // Everything has succeeded to here. Return true.
     return true;

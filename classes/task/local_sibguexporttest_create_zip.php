@@ -28,6 +28,7 @@ require_once($CFG->libdir . '/filestorage/zip_archive.php');
 
 use local_sibguexporttest\debug;
 use local_sibguexporttest\export;
+use local_sibguexporttest\generator_v2;
 use zip_archive;
 
 class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
@@ -75,6 +76,10 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
                     break;
                 case 'list':
                     $file = $this->generate_list($export, $user, $course, $data->session_id ?? null);
+                    $title = '';
+                    break;
+                case 'ticket':
+                    $file = $this->generate_ticket($export, $user, $course, $data->session_id ?? null);
                     $title = '';
                     break;
                 default:
@@ -244,5 +249,67 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
             case 23: return 'Entry has been deleted'; 				//ZIP_ER_DELETED
         }
         return 'Unknow zip error';
+    }
+
+    private function generate_ticket(export $export, \stdClass $user, \stdClass $course, $session_id = null) : \stored_file {
+        global $PAGE;
+
+        /** @var \local_sibguexporttest\output\generator_renderer $renderer */
+        $renderer = $PAGE->get_renderer('local_sibguexporttest', 'generator');
+        /** @var \local_sibguexporttest\output\question_renderer $qrenderer */
+        $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
+
+        [$config_id, $count] = \explode('|', $export->get('description'));
+
+        $zippath = tempnam(sys_get_temp_dir(), 'local_sibguexporttest');
+        $ziparchive = new zip_archive();
+        if ($ziparchive->open($zippath, \file_archive::CREATE)) {
+            $ziparchive->add_file_from_string('README.txt', 'Сформирована билеты по курсу "' . $course->shortname . '" от ' . date('Y.m.d H:i:s').PHP_EOL.$export->get('userids'));
+
+            for ($i = 1; $i <= $count; $i++) {
+                mtrace('Iterable: ' . $i);
+
+                /** @var \local_sibguexporttest\output\generator_renderer $renderer */
+                $renderer = $PAGE->get_renderer('local_sibguexporttest', 'generator');
+                /** @var \local_sibguexporttest\output\question_renderer $qrenderer */
+                $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
+                $generator = new generator_v2($renderer, $qrenderer, 'ticket',  $config_id, $user->id, false, $session_id);
+
+                mtrace('Filename: ' . $course->shortname.'-'.$i.'.pdf');
+
+                if (!empty($generator->get_error())) {
+                    mtrace('Error(iterable='.$i.'): ' . print_r($generator->get_error(), true));
+                    continue;
+                }
+
+                $ziparchive->add_file_from_string($course->shortname.'-'.$i.'.pdf', $generator->get_content());
+            }
+            $res = $ziparchive->close();
+
+            if ($res === true)
+                mtrace('success zip.');
+            else
+                mtrace('failed zip: ' . $this->GetZipErrMessage($res));
+        } else {
+            throw new \moodle_exception('error open file ' . $zippath);
+        }
+
+        // You probably don't need attachments but if you do, here is how to add one
+        $usercontext = \context_user::instance($user->id);
+        $file = new \stdClass();
+        $file->contextid = $usercontext->id;
+        $file->component = 'local_sibguexporttest';
+        $file->filearea = 'local_sibguexporttest_export';
+        $file->itemid = $export->get('id');
+        $file->filepath = '/';
+        $file->filename = $course->shortname . '.zip';
+        $file->source = 'local_sibguexporttest_export';
+
+        $fs = get_file_storage();
+        if ($stored_file = $fs->get_file($file->contextid, $file->component, $file->filearea, $file->itemid, $file->filepath, $file->filename)) {
+            $stored_file->delete();
+        }
+
+        return $fs->create_file_from_pathname($file, $zippath);
     }
 }

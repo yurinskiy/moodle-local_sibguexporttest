@@ -15,6 +15,7 @@ class course_settings_form extends \moodleform {
 
         $mform =& $this->_form;
         $repeatno = $this->_customdata['repeatno'];
+        $submitlabel = $this->_customdata['submitlabel'] ?? null;
 
         // Настройки страницы
         $mform->addElement('header', 'settingspage', get_string('settingspage', 'local_sibguexporttest'));
@@ -56,7 +57,7 @@ class course_settings_form extends \moodleform {
 
         //-------------------------------------------------------------------------------
         // buttons
-        $this->add_action_buttons();
+        $this->add_action_buttons(true, $submitlabel);
     }
 
     public function validation($data, $files) {
