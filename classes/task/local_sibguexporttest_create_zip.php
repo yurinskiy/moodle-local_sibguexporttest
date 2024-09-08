@@ -27,7 +27,6 @@ global $CFG;
 require_once($CFG->libdir . '/filestorage/zip_archive.php');
 
 use local_sibguexporttest\config;
-use local_sibguexporttest\debug;
 use local_sibguexporttest\export;
 use local_sibguexporttest\generator_v2;
 use zip_archive;
@@ -260,7 +259,7 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
         /** @var \local_sibguexporttest\output\question_renderer $qrenderer */
         $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
 
-        [$config_id, $count] = \explode('|', $export->get('description'));
+        [$config_id, $count, $format] = \explode('|', $export->get('description'));
         $config = config::get_by_id($config_id);
 
         $zippath = tempnam(sys_get_temp_dir(), 'local_sibguexporttest');
@@ -271,12 +270,14 @@ class local_sibguexporttest_create_zip extends \core\task\adhoc_task {
             for ($i = 1; $i <= $count; $i++) {
                 mtrace('Iterable: ' . $i);
 
+                $variant =  $i + ((int) $config->get('versionfrom')) - 1;
+
                 $generator = new generator_v2($renderer, $qrenderer, 'ticket',  $config_id, $user->id, false, $session_id, [
-                    'variant' => $i + ((int) $config->get('versionfrom')) - 1,
+                    'variant' => $variant,
                     'count' => $count,
                 ]);
 
-                mtrace('Filename: ' . $course->shortname.'-'.$i.'.pdf');
+                mtrace('Filename: ' . $course->shortname.'-'.$variant.'.pdf');
 
                 if (!empty($generator->get_error())) {
                     mtrace('Error(iterable='.$i.'): ' . print_r($generator->get_error(), true));
