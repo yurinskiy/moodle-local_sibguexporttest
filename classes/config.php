@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace local_sibguexporttest;
+use local_sibguexporttest\form\course_config_form;
 use local_sibguexporttest\form\course_settings_form;
 
 defined('MOODLE_INTERNAL') || die();
@@ -129,6 +130,30 @@ class config extends \core\persistent {
             ],
             'content' => [
                 'type' => PARAM_RAW,
+            ],
+            'hasfirstpage' => [
+                'type' => PARAM_BOOL,
+                'default' => true,
+            ],
+            'hasbreakfirstpage' => [
+                'type' => PARAM_BOOL,
+                'default' => true,
+            ],
+            'versionformat' => [
+                'type' => PARAM_TEXT,
+                'default' => 'Вариант #',
+            ],
+            'versionfrom' => [
+                'type' => PARAM_INT,
+                'default' => 1,
+            ],
+            'showpagination' => [
+                'type' => PARAM_BOOL,
+                'default' => true,
+            ],
+            'showrightanswer' => [
+                'type' => PARAM_BOOL,
+                'default' => true,
             ]
         ];
     }
@@ -142,7 +167,7 @@ class config extends \core\persistent {
 
     }
 
-    public function handle_form(course_settings_form $mform) {
+    public function handle_form(course_config_form $mform) {
         $data = $mform->get_data();
         $data->id = $this->get('id');
         $context = $mform->get_context();
@@ -171,12 +196,12 @@ class config extends \core\persistent {
         $this->raw_set('content', json_encode($content ?? []));
     }
 
-    public function set_form(course_settings_form $mform) {
+    public function set_form(course_config_form $mform) {
         $data = $this->get_data($mform);
         $mform->set_data($data);
     }
 
-    public function get_data(course_settings_form $mform) {
+    public function get_data(course_config_form $mform) {
         $data = $this->to_record();
         $data->id = $this->get('id');
 
@@ -189,12 +214,12 @@ class config extends \core\persistent {
         $data->id = $this->get('id');
 
         $context = \context_course::instance($this->get('courseid'));
-        $mform = new course_settings_form(null, ['id' => $this->get('id'), 'context' => $context, 'repeatno' => $this->get_repeatno()]);
+        $mform = new course_config_form(null, ['id' => $this->get('id'), 'context' => $context, 'repeatno' => $this->get_repeatno()]);
 
         return $this->prepare_data($data, $mform);
     }
 
-    protected function prepare_data($data, course_settings_form $mform) {
+    protected function prepare_data($data, course_config_form $mform) {
         $context = $mform->get_context();
         foreach (['headerpage', 'footerpage', 'headerbodypage', 'footerbodypage', 'signmasterpage'] as $field) {
             $data = file_prepare_standard_editor($data, $field, $mform->get_editor_options(), $context, 'local_sibguexporttest', $field, $data->id);

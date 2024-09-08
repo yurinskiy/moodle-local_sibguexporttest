@@ -42,7 +42,7 @@ use question_display_options;
  */
 class question_renderer extends \core_question_renderer {
 
-    public function question_gen(question_attempt $qa, question_display_options $options, &$number) {
+    public function question_gen(question_attempt $qa, question_display_options $options, &$number, bool $showrightanswer = true) {
         global $PAGE;
 
         $behaviouroutput = $qa->get_behaviour()->get_renderer($PAGE);
@@ -52,7 +52,7 @@ class question_renderer extends \core_question_renderer {
         $options = clone($options);
         $options->marks = question_display_options::MAX_ONLY;
 
-        return $this->getContent($qa, $qtoutput, $options, $number);
+        return $this->getContent($qa, $qtoutput, $options, $number, $showrightanswer);
     }
 
     protected function info(question_attempt $qa, $behaviouroutput, $qtoutput, question_display_options $options, $number) {
@@ -79,7 +79,7 @@ class question_renderer extends \core_question_renderer {
         return $output;
     }
 
-    protected function getContent(question_attempt $qa, $qtoutput, question_display_options $options, &$number): string {
+    protected function getContent(question_attempt $qa, $qtoutput, question_display_options $options, &$number, bool $showrightanswer = true): string {
         $hasNumber = true;
 
         switch (get_class($qtoutput)) {
@@ -91,7 +91,7 @@ class question_renderer extends \core_question_renderer {
                 [$content, $correctAnswer] = $this->prepare_qtype_shortanswer_renderer($qa, $qtoutput, $options);
                 break;
             case 'qtype_multianswer_renderer':
-                [$content, $correctAnswer] = $this->prepare_qtype_multianswer_renderer($qa, $qtoutput, $options, $number);
+                [$content, $correctAnswer] = $this->prepare_qtype_multianswer_renderer($qa, $qtoutput, $options, $number, $showrightanswer);
                 break;
             case 'qtype_essay_renderer':
                 [$content, $correctAnswer] = $this->prepare_qtype_essay_renderer($qa, $qtoutput, $options);
@@ -108,7 +108,9 @@ class question_renderer extends \core_question_renderer {
                 break;
         }
 
-        $content .= $correctAnswer ?? '';
+        if ($showrightanswer) {
+            $content .= $correctAnswer ?? '';
+        }
 
         if (strpos($content, 'checked="checked"')) {
             $content = str_replace('checked="checked"', '', $content);
@@ -207,8 +209,10 @@ class question_renderer extends \core_question_renderer {
         ];
     }
 
-    private function prepare_qtype_multianswer_renderer(question_attempt $qa, $qtoutput, question_display_options $options, $number): array {
+    private function prepare_qtype_multianswer_renderer(question_attempt $qa, \qtype_renderer $qtoutput, question_display_options $options, $number, bool $showrightanswer = true): array {
         $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $rightanswers = $qa->get_right_answer_summary();
 
         /** @var \simple_html_dom $html */
         $html = str_get_html($content);
@@ -263,6 +267,11 @@ class question_renderer extends \core_question_renderer {
         }
 
         $content = $html->save();
+
+        if (mb_substr_count($rightanswers, 'часть') !== count($questions)) {
+            throw new \moodle_exception('error_prepare_qtype_multianswer_renderer', 'sibguexporttest', '', null, 'question_attempt#'.$qa->get_database_id());
+        }
+
         foreach ($questions as $key => $question) {
             $content .= \html_writer::end_tag('tr');
             $content .= \html_writer::end_tag('table');
@@ -272,6 +281,12 @@ class question_renderer extends \core_question_renderer {
             $content .= $this->getHeader($number . '.' . ($key+1));
             $content .= html_writer::start_div('que ' . $qa->get_question(false)->get_type_name() . ' ' . $qa->get_behaviour_name());
             $content .= $question->text();
+            if ($showrightanswer) {
+                $content .= html_writer::nonempty_tag('div', sprintf(
+                    'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+                    $this->extractTextByKey($rightanswers, $key+1)
+                ), ['class' => 'rightanswer']);
+            }
             $content .= html_writer::end_tag('div');
         }
 
@@ -293,5 +308,26 @@ class question_renderer extends \core_question_renderer {
         ), ['class' => 'rightanswer']);
 
         return [$content, $correctAnswer];
+    }
+
+    private function extractTextByKey($input, $key): string
+    {
+        // Разбиваем строку на части по слову "часть"
+        $parts = explode('часть', $input);
+
+        // Пробегаем по всем частям
+        foreach ($parts as $part) {
+            // Убираем лишние пробелы
+            $part = trim($part);
+
+            // Если часть начинается с ключа, возвращаем её
+            if (strpos($part, "$key:") === 0) {
+                // Убираем номер части и возвращаем оставшийся текст
+                return trim(substr($part, strlen("$key:")));
+            }
+        }
+
+        // Если ключ не найден, возвращаем null или ошибку
+        return '';
     }
 }

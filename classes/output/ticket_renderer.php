@@ -72,20 +72,7 @@ HTML;
             $config->handle_form($mform);
             $config->save();
 
-            $export = new \local_sibguexporttest\export();
-            $export->set('type', 'ticket');
-            $export->set('courseid', $config->get('courseid'));
-            $export->set('userids', 0);
-            $export->set('description', $config->get('id').'|'.$data->count_ticket);
-            $export->save();
-
-            $task = \local_sibguexporttest\task\local_sibguexporttest_create_zip::instance($export->get('id'));
-            $task->set_userid($USER->id);
-            \core\task\manager::queue_adhoc_task($task);
-
-            $message = 'Генерация ЭБ поставлена в очередь.';
-
-            redirect($PAGE->url, $message, \core\output\notification::NOTIFY_INFO);
+            $this->createtask($config, $data);
         } else {
             $output .= $this->moodleform($mform);
         }
@@ -106,5 +93,25 @@ HTML;
         ob_end_clean();
 
         return $o;
+    }
+
+    private function createtask(config $config, $data)
+    {
+        global $PAGE, $USER;
+
+        $export = new \local_sibguexporttest\export();
+        $export->set('type', 'ticket');
+        $export->set('courseid', $config->get('courseid'));
+        $export->set('userids', 0);
+        $export->set('description', $config->get('id').'|'.$data->count_ticket);
+        $export->save();
+
+        $task = \local_sibguexporttest\task\local_sibguexporttest_create_zip::instance($export->get('id'));
+        $task->set_userid($USER->id);
+        \core\task\manager::queue_adhoc_task($task);
+
+        $message = 'Генерация ЭБ поставлена в очередь.';
+
+        redirect($PAGE->url, $message, \core\output\notification::NOTIFY_INFO);
     }
 }

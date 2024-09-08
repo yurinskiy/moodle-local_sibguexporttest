@@ -229,6 +229,42 @@ function xmldb_local_sibguexporttest_upgrade($oldversion): bool
         upgrade_plugin_savepoint(true, 2024090100, 'local', 'sibguexporttest');
     }
 
+    if ($oldversion < 2024090800) {
+        $table = new xmldb_table('local_sibguexporttest_config');
+        $field = new xmldb_field('hasfirstpage', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'timemodified');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('hasbreakfirstpage', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'hasfirstpage');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('versionformat', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, 'Вариант #', 'hasbreakfirstpage');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('versionfrom', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'versionformat');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('showpagination', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'versionfrom');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('showrightanswer', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'showpagination');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2024090800, 'local', 'sibguexporttest');
+    }
+
+
     // Everything has succeeded to here. Return true.
     return true;
 }

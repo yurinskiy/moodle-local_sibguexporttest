@@ -44,8 +44,10 @@ class generator_v2 {
     public $rawcontent;
     /** @var string|null  */
     public $error;
+    /** @var int|null  */
+    public $count;
 
-    public function __construct(generator_renderer $renderer, question_renderer $qrenderer, string $type, int $id, int $userid = null, bool $debug = false, string $session_id = null) {
+    public function __construct(generator_renderer $renderer, question_renderer $qrenderer, string $type, int $id, int $userid = null, bool $debug = false, string $session_id = null, array $options = []) {
         $this->debug = $debug;
         $this->type = $type;
 
@@ -55,6 +57,7 @@ class generator_v2 {
                 break;
             case 'ticket':
                 $this->settings = config::get_by_id($id);
+                $this->count = $options['count'] ?? 1;
                 break;
             default:
                 throw new \moodle_exception('error_unknown_type', 'sibguexporttest', '', null, 'Unknown type ' . $this->type);
@@ -75,7 +78,7 @@ class generator_v2 {
         $this->error = null;
 
         try {
-            $this->generate();
+            $this->generate($options);
         } catch (\Throwable $exception) {
             $this->error = $exception->getFile().'#L'.$exception->getLine().': '.$exception->getMessage();
         }
@@ -88,7 +91,8 @@ class generator_v2 {
 
     public function get_header($body) {
         $variant = $this->get_variant();
-        $username = $this->user->username;
+        $username = $this->settings instanceof settings ? $this->user->username : '';
+        $pagination = $this->show_pagination() ? '<span class="page"></span> / <span class="topage"></span>' : '';
 
         $content = <<<HTML
 <table class="{$this->getDebugClass()}">
@@ -96,7 +100,7 @@ class generator_v2 {
 <tr>
 <td style="width: 33.33%;">{$variant}</td>
 <td style="width: 33.33%; text-align: center">{$username}</td>
-<td style="width: 33.33%;"><span class="page"></span> / <span class="topage"></span></td>
+<td style="width: 33.33%;">{$pagination}</td>
 </tr>
 </thead>
 <tbody>
@@ -176,20 +180,32 @@ HTML;
     }
 
     public function get_variant() {
-        if (!$this->variant) {
-            foreach ($this->quizzes as $quizid) {
-                $attempts = quiz_get_user_attempts($quizid, $this->userid, 'finished', true);
-                $lastattempt = end($attempts);
-
-                if ($lastattempt) {
-                    $variants[] = $lastattempt->id;
-                }
-            }
-
-            $this->variant = \implode('-', $variants ?? []);
+        if ($this->settings instanceof settings) {
+            return 'Вариант ' . $this->variant;
         }
 
-        return 'Вариант ' . $this->variant;
+        $template = $this->settings::has_property('versionformat') ? $this->settings->get('versionformat') : 'Вариант #';
+
+        // Подсчитываем количество символов # в шаблоне
+        $num_hashes = mb_substr_count($template, '#');
+        if ($num_hashes === 0) {
+            return rtrim($template) . ' ' . $this->variant;
+        }
+
+        // Подсчитываем количество цифр в числе
+        $num_digits = mb_strlen((string) $this->count);
+
+        // Если количество цифр в числе больше, чем количество # в шаблоне, дополняем шаблон символами #
+        if ($num_digits > $num_hashes) {
+            $template = str_replace(str_repeat('#', $num_hashes), str_repeat('#', $num_digits), $template);
+            $num_hashes = $num_digits; // Обновляем количество #
+        }
+
+        // Форматируем число с ведущими нулями
+        $formatted_number = sprintf('%0' . $num_hashes . 'd', $this->variant);
+
+        // Заменяем ### на отформатированное число
+        return str_replace(str_repeat('#', $num_hashes), $formatted_number, $template);
     }
 
     public function get_first_page() {
@@ -262,7 +278,7 @@ HTML;
         return $this->renderer->get_html($content);
     }
 
-    public function get_ticket_page()
+    public function get_ticket_page(array $options = [])
     {
         $output = '';
         $questionno = 1;
@@ -288,12 +304,10 @@ HTML;
             $slots = $attempt->get_slots();
             foreach ($slots as $slot) {
                 $output .=  \html_writer::start_tag('table', ['class' => 'questions ' . $this->getDebugClass()]);
-                $output .= $this->print_question($attempt, $questionno, $slot);
+                $output .= $this->print_question($attempt, $questionno, $slot, $options['showrightanswer'] ?? true);
                 $output .= \html_writer::end_tag('table');
             }
         }
-
-        $this->variant = '-';
 
         $output .= \html_writer::start_tag('table', ['class' => $this->getDebugClass()]);
         $output .= \html_writer::end_tag('tr');
@@ -306,7 +320,7 @@ HTML;
         return $this->renderer->get_html($output);
     }
 
-    public function get_default_page() {
+    public function get_default_page(array $options) {
         $output = '';
         $questionno = 1;
 
@@ -372,14 +386,17 @@ HTML;
         $content .= $this->qrenderer->question_gen(
             $question_attempt,
             $displayoptions,
-            $number
+            $number,
+            !$this->settings::has_property('showrightanswer') || $this->settings->get('showrightanswer')
         );
         $content .= \html_writer::end_tag('tr');
 
         return $content;
     }
 
-    private function generate() {
+    private function generate(array $options = []) {
+        $this->variant = $options['variant'] ?? '-';
+
         $header_content = $this->get_header($this->pdfdata->headerpage_editor['text']);
         $footer_content = $this->get_footer($this->pdfdata->footerpage_editor['text']);
 
@@ -393,25 +410,41 @@ HTML;
             'print-media-type',
         ]);
 
-
-
         switch ($this->type) {
             case 'default':
-                $test_page = $this->get_default_page();
+                $test_page = $this->get_default_page($options);
+                $first_page = $this->get_first_page();
+
+                $pdf->addPage($first_page);
+                $pdf->addPage($test_page);
+
+                $this->rawcontent = $first_page . $test_page;
                 break;
             case 'ticket':
-                $test_page = $this->get_ticket_page();
+                if (!$this->settings instanceof config) {
+                    throw new  \moodle_exception('error_unknown_type', 'sibguexporttest', '', null, sprintf('Expected "%s", given "%s".', config::class, get_class($this->settings)));
+                }
+
+                $test_page = $this->get_ticket_page($options);
+
+                if ($this->settings->get('hasfirstpage')) {
+                    $first_page = $this->get_first_page();
+                    if ($this->settings->get('hasbreakfirstpage')) {
+                        $pdf->addPage($first_page);
+                        $pdf->addPage($test_page);
+                    } else {
+                        $pdf->addPage($first_page . $test_page);
+                        $this->rawcontent = $first_page . $test_page;
+                    }
+                } else {
+                    $pdf->addPage($test_page);
+                    $this->rawcontent = $test_page;
+                }
+
                 break;
             default:
                 throw new \moodle_exception('error_unknown_type', 'sibguexporttest', '', null, 'Unknown type ' . $this->type);
         }
-
-        $first_page = $this->get_first_page();
-
-        $pdf->addPage($first_page);
-        $pdf->addPage($test_page);
-
-        $this->rawcontent = $test_page;
 
         if ($this->debug) {
             $pdf->addPage($this->get_font_size_page());
@@ -458,5 +491,10 @@ HTML;
         }
 
         return $this->path;
+    }
+
+    public function show_pagination(): bool
+    {
+        return !$this->settings::has_property('showpagination') || $this->settings->get('showpagination');
     }
 }

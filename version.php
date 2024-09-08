@@ -23,7 +23,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_sibguexporttest';
-$plugin->version = 2024090100;
+$plugin->version = 2024090800;
 $plugin->requires = 2021051700.00;
 $plugin->supported = [311, 400];
 $plugin->incompatible = 401;
