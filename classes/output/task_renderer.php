@@ -109,10 +109,10 @@ class task_renderer extends plugin_renderer_base {
                     $type = 'Билеты ВИ';
                     break;
                 case 'list':
-                    $type = 'Список билетов';
+                    $type = 'Список билетов ВИ';
                     break;
                 case 'ticket':
-                    $type = 'Генерация ЭБ';
+                    $type = 'Генерация ТБ';
                     break;
                 default:
                     $type = 'Неизвестный тип';

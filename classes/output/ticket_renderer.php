@@ -63,7 +63,7 @@ class ticket_renderer extends plugin_renderer_base {
 </style>
 HTML;
 
-        $mform = new course_config_form($PAGE->url->out_as_local_url(false), ['id' => $config->get('id'), 'context' => $context, 'repeatno' => $config->get_repeatno(), 'submitlabel' => 'Сгенерировать ЭБ']);
+        $mform = new course_config_form($PAGE->url->out_as_local_url(false), ['id' => $config->get('id'), 'context' => $context, 'repeatno' => $config->get_repeatno(), 'submitlabel' => 'Сгенерировать']);
         $config->set_form($mform);
 
         if ($mform->is_cancelled()) {
@@ -110,7 +110,7 @@ HTML;
         $task->set_userid($USER->id);
         \core\task\manager::queue_adhoc_task($task);
 
-        $message = 'Генерация ЭБ поставлена в очередь.';
+        $message = 'Генерация ТБ поставлена в очередь.';
 
         redirect($PAGE->url, $message, \core\output\notification::NOTIFY_INFO);
     }

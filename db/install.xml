@@ -49,11 +49,11 @@
         <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="local_sibguexporttest_config" COMMENT="Для профилей и конфигов ЭБ">
+    <TABLE NAME="local_sibguexporttest_config" COMMENT="Для профилей и конфигов ТБ">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="type" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="ticket" SEQUENCE="false" COMMENT="Тип настройки ЭБ или профили"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="ticket" SEQUENCE="false" COMMENT="Тип настройки ТБ или профили"/>
         <FIELD NAME="headerpage" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="headerpageformat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="footerpage" TYPE="text" NOTNULL="false" SEQUENCE="false"/>

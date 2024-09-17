@@ -36,7 +36,7 @@ $string['headerpage'] = 'Верхний колонтитул';
 $string['footerpage'] = 'Нижний колонтитул';
 $string['headerbodypage'] = 'Титульный лист ДО номера варианта';
 $string['footerbodypage'] = 'Титульный лист ПОСЛЕ номера варианта';
-$string['signmasterpage'] = 'Подпись председателя предметной комиссии';
+$string['signmasterpage'] = 'Подпись на последней странице билета';
 
 $string['settingstest'] = 'Настройка тестов';
 $string['test_id'] = 'Выбранный тест';
