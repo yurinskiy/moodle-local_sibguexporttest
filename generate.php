@@ -51,6 +51,7 @@ switch ($action) {
         /** @var \local_sibguexporttest\output\question_renderer $qrenderer */
         $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
         (new \local_sibguexporttest\generator($courseid, $userid, $renderer, $qrenderer, $debug))->get_pdf_response();
+        //(new \local_sibguexporttest\generator_v2($renderer, $qrenderer, 'default', $courseid, $userid, $debug))->get_pdf_response();
         exit;
     default:
         redirect(

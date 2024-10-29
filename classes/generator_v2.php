@@ -184,6 +184,10 @@ HTML;
             return 'Вариант ' . $this->variant;
         }
 
+        if (!$this->variant) {
+            return '';
+        }
+
         $template = $this->settings::has_property('versionformat') ? $this->settings->get('versionformat') : 'Вариант #';
 
         // Подсчитываем количество символов # в шаблоне
@@ -397,28 +401,27 @@ HTML;
     private function generate(array $options = []) {
         $this->variant = $options['variant'] ?? '-';
 
-        $header_content = $this->get_header($this->pdfdata->headerpage_editor['text']);
-        $footer_content = $this->get_footer($this->pdfdata->footerpage_editor['text']);
+        $contents = [];
 
-        $pdf = new Pdf([
+        $params = [
             'encoding' => 'UTF-8',
-            'header-html' => new File($header_content, '.html'),
-            'header-line',
-            'footer-html' => new File($footer_content, '.html'),
-            'footer-line',
             'page-size' => 'A4',
             'print-media-type',
-        ]);
+        ];
 
         switch ($this->type) {
             case 'default':
                 $test_page = $this->get_default_page($options);
                 $first_page = $this->get_first_page();
 
-                $pdf->addPage($first_page);
-                $pdf->addPage($test_page);
+                $contents[] = $first_page;
+                $contents[] = $test_page;
 
-                $this->rawcontent = $first_page . $test_page;
+                $header_content = $this->get_header($this->pdfdata->headerpage_editor['text']);
+                $params['header-html'] = new File($header_content, '.html');
+
+                $footer_content = $this->get_footer($this->pdfdata->footerpage_editor['text']);
+                $params['footer-html'] = new File($footer_content, '.html');
                 break;
             case 'ticket':
                 if (!$this->settings instanceof config) {
@@ -430,21 +433,39 @@ HTML;
                 if ($this->settings->get('hasfirstpage')) {
                     $first_page = $this->get_first_page();
                     if ($this->settings->get('hasbreakfirstpage')) {
-                        $pdf->addPage($first_page);
-                        $pdf->addPage($test_page);
+                        $contents[] = $first_page;
+                        $contents[] = $test_page;
                     } else {
-                        $pdf->addPage($first_page . $test_page);
-                        $this->rawcontent = $first_page . $test_page;
+                        $contents[] = $first_page.$test_page;
                     }
                 } else {
-                    $pdf->addPage($test_page);
-                    $this->rawcontent = $test_page;
+                    $contents[] = $test_page;
+                }
+
+                if ($this->pdfdata->headerpage_editor['text'] || $this->show_pagination() || $this->variant) {
+                    $header_content = $this->get_header($this->pdfdata->headerpage_editor['text']);
+                    $params['header-html'] = new File($header_content, '.html');
+                    $params[] = 'header-line';
+                }
+
+                if ($this->pdfdata->footerpage_editor['text']) {
+                    $footer_content = $this->get_footer($this->pdfdata->footerpage_editor['text']);
+                    $params['footer-html'] = new File($footer_content, '.html');
+                    $params[] = 'footer-line';
                 }
 
                 break;
             default:
                 throw new \moodle_exception('error_unknown_type', 'sibguexporttest', '', null, 'Unknown type ' . $this->type);
         }
+
+        $pdf = new Pdf($params);
+
+        foreach ($contents as $content) {
+            $pdf->addPage($content);
+        }
+
+        $this->rawcontent = implode('', $contents);
 
         if ($this->debug) {
             $pdf->addPage($this->get_font_size_page());
