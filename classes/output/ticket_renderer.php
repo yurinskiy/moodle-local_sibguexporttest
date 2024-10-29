@@ -72,16 +72,16 @@ HTML;
             $config->handle_form($mform);
             $config->save();
 
-            //$this->createtask($config, $data);
+            $this->createtask($config, $data);
 
-            /** @var \local_sibguexporttest\output\generator_renderer $renderer */
-            $renderer = $PAGE->get_renderer('local_sibguexporttest', 'generator');
-            /** @var \local_sibguexporttest\output\question_renderer $qrenderer */
-            $qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
-            (new \local_sibguexporttest\generator_v2($renderer, $qrenderer, 'ticket', $config->get('id'),  $USER->id, false, null, [
-                'variant' => $config->get('versionfrom'),
-                'count' => $data->count_ticket,
-            ]))->get_pdf_response();
+            ///** @var \local_sibguexporttest\output\generator_renderer $renderer */
+            //$renderer = $PAGE->get_renderer('local_sibguexporttest', 'generator');
+            ///** @var \local_sibguexporttest\output\question_renderer $qrenderer */
+            //$qrenderer = $PAGE->get_renderer('local_sibguexporttest', 'question');
+            //(new \local_sibguexporttest\generator_v2($renderer, $qrenderer, 'ticket', $config->get('id'),  $USER->id, false, null, [
+            //    'variant' => $config->get('versionfrom'),
+            //    'count' => $data->count_ticket,
+            //]))->get_pdf_response();
         } else {
             $output .= $this->moodleform($mform);
         }
