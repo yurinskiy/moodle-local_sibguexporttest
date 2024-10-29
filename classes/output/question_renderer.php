@@ -82,6 +82,10 @@ class question_renderer extends \core_question_renderer {
     protected function getContent(question_attempt $qa, $qtoutput, question_display_options $options, &$number, bool $showrightanswer = true): string {
         $hasNumber = true;
 
+        //if ($number === 8) {
+        //    echo get_class($qtoutput); exit;
+        //}
+
         switch (get_class($qtoutput)) {
             case 'qtype_description_renderer':
                 $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
@@ -98,6 +102,27 @@ class question_renderer extends \core_question_renderer {
                 break;
             case 'qtype_match_renderer':
                 [$content, $correctAnswer] = $this->prepare_qtype_match_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_calculated_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_calculated_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_calculatedsimple_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_calculatedsimple_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_ddwtos_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_ddwtos_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_gapselect_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_gapselect_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_multichoice_single_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_multichoice_single_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_numerical_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_numerical_renderer($qa, $qtoutput, $options);
+                break;
+            case 'qtype_truefalse_renderer':
+                [$content, $correctAnswer] = $this->prepare_qtype_truefalse_renderer($qa, $qtoutput, $options);
                 break;
             default:
                 $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
@@ -294,6 +319,121 @@ class question_renderer extends \core_question_renderer {
         $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
 
         $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock form-inline">')) . '</div>';
+
+        preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
+        $correctAnswer = html_writer::nonempty_tag('div', sprintf(
+            'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+            \implode(' ', $matches[1] ?? [])
+        ), ['class' => 'rightanswer']);
+
+        return [$content, $correctAnswer];
+    }
+
+    private function prepare_qtype_calculated_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock form-inline">')) . '</div>';
+
+        preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
+        $correctAnswer = html_writer::nonempty_tag('div', sprintf(
+            'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+            \implode(' ', $matches[1] ?? [])
+        ), ['class' => 'rightanswer']);
+
+        return [$content, $correctAnswer];
+    }
+
+    private function prepare_qtype_calculatedsimple_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock form-inline">')) . '</div>';
+
+        preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
+        $correctAnswer = html_writer::nonempty_tag('div', sprintf(
+            'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+            \implode(' ', $matches[1] ?? [])
+        ), ['class' => 'rightanswer']);
+
+        return [$content, $correctAnswer];
+    }
+
+    private function prepare_qtype_ddwtos_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        // TODO fix
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $correctAnswer = $qtoutput->correct_response($qa);
+
+        return [$content, $correctAnswer];
+    }
+
+    private function prepare_qtype_gapselect_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        // TODO fix
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $correctAnswer = html_writer::nonempty_tag('div', $qtoutput->correct_response($qa), ['class' => 'rightanswer']);
+
+        //echo '<code>';
+        //echo htmlspecialchars($content);
+        //echo '</code>';
+        //echo '<code>';
+        //echo htmlspecialchars($correctAnswer);
+        //echo '</code>';
+        //echo '<div style="border: 1px solid red">';
+        //echo $content;
+        //echo '</div>';
+        //echo '<div style="border: 1px solid red">';
+        //echo $correctAnswer;
+        //echo '</div>';
+        //die;
+
+        return [$content, $correctAnswer];
+    }
+
+    private function prepare_qtype_numerical_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock form-inline">')) . '</div>';
+
+        preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
+        $correctAnswer = html_writer::nonempty_tag('div', sprintf(
+            'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+            \implode(' ', $matches[1] ?? [])
+        ), ['class' => 'rightanswer']);
+
+        return [$content, $correctAnswer];
+    }
+
+    private function prepare_qtype_truefalse_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        $content = mb_substr($content, 0, mb_stripos($content, '<div class="ablock">')) . '</div>';
+
+        preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
+        $correctAnswer = html_writer::nonempty_tag('div', sprintf(
+            'Правильный ответ: <p dir="ltr" style="text-align: left;">%s</p>',
+            \implode(' ', $matches[1] ?? [])
+        ), ['class' => 'rightanswer']);
+
+        return [$content, $correctAnswer];
+    }
+
+    private function prepare_qtype_multichoice_single_renderer(question_attempt $qa, $qtoutput, question_display_options $options): array {
+        $content = html_writer::div($qtoutput->formulation_and_controls($qa, $options), 'formulation clearfix');
+
+        /** @var \simple_html_dom $html */
+        $html = str_get_html($content);
+
+        $index = 0;
+        /** @var \simple_html_dom_node|null $node */
+        while ($node = $html->find('.answer', $index)) {
+            foreach ($node->find('input,.answernumber') as $input) {
+                $input->remove();
+            }
+
+            $index++;
+        }
+
+        $content = $html->save();
 
         preg_match_all('/Правильный ответ:\s{0,}(.+)/', $qtoutput->correct_response($qa), $matches);
         $correctAnswer = html_writer::nonempty_tag('div', sprintf(
