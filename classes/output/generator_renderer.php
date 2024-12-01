@@ -220,7 +220,6 @@ HTML;
         $output .= html_writer::empty_tag('meta', ['http-equiv' => 'Content-Type', 'content' => 'text/html; charset=UTF-8']);
         $output .= html_writer::empty_tag('meta', ['name' => 'viewport', 'content' => 'initial-scale=1']);
         $output .= $this->get_head_js($customjs);
-        $output .= $this->get_head_js($customjs);
         $output .= $this->get_head_css($customcss);
         $output .= html_writer::end_tag('head');
         $output .= html_writer::start_tag('body', ['onload' => 'substitutePdfVariables()']);

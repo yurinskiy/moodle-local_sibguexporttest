@@ -30,6 +30,7 @@ require_once($CFG->libdir . '/questionlib.php');
 require_once(__DIR__ . '/../../simple_html_dom.php');
 
 use html_writer;
+use mikehaertl\shellcommand\Command;
 use question_attempt;
 use question_display_options;
 
@@ -143,7 +144,7 @@ class question_renderer extends \core_question_renderer {
 
         $output = $this->getHeader($hasNumber ? $number++ : '');
         $output .= html_writer::start_div('que ' . $qa->get_question(false)->get_type_name() . ' ' . $qa->get_behaviour_name());
-        $output .= $content;
+        $output .= $this->convertLatexToSvgInHtml($content);
         $output .= html_writer::end_tag('div');
         $output .= $this->getFooter();
 
@@ -463,5 +464,102 @@ class question_renderer extends \core_question_renderer {
 
         // Если ключ не найден, возвращаем null или ошибку
         return '';
+    }
+
+    protected function convertLatexToSvgInHtml($html) {
+        /** @var \simple_html_dom $html */
+        $html = str_get_html($html);
+
+        $index = 0;
+        /** @var \simple_html_dom_node|null $node */
+        while ($node = $html->find('.filter_mathjaxloader_equation', $index)) {
+            /** @var \simple_html_dom_node|null $input */
+            foreach ($node->find('.nolink') as $input) {
+                $svg = $this->latexToSvg($input->innertext());
+                if ($svg) {
+                    $input->innertext = sprintf('<img src="data:image/svg+xml;base64,%s" alt="%s" />', base64_encode($svg), $input->innertext());
+                }
+            }
+
+            $index++;
+        }
+
+        return $html->save();
+    }
+
+    protected function convertLatexToSvgInHtmlOld($html) {
+        $regex = '/\$\$(.+?)\$\$|\\\[(.+?)\\\]|\$(.+?)\$/s';
+        $result = preg_replace_callback($regex, function ($matches) {
+            print_r($matches);
+            echo '#####'. PHP_EOL;
+
+            if (!empty($matches[1])) {
+                $svg = $this->latexToSvg($matches[0]);
+                if ($svg) {
+                    return sprintf('<img src="data:image/svg+xml;base64,%s" alt="%s" />', base64_encode($svg), $matches[0]);
+                }
+            }
+
+            return ""; // Если ничего не найдено, ничего не заменяем
+        }, $html);
+
+        return $result;
+    }
+
+    function latexToSvg($latex) {
+        try {
+            // Шаблон LaTeX документа
+            $texTemplate = <<<TEX
+\\documentclass[preview]{standalone}
+\\usepackage{amsmath}
+\\begin{document}
+\\fontsize{14.4}{17.3}\\selectfont
+%s
+\\end{document}
+TEX;
+
+            // Создаем временные файлы
+            $tmpDir = sys_get_temp_dir();
+            $texFile = tempnam($tmpDir, 'latex');
+            rename($texFile, $texFile.'.tex');
+            $pdfFile = $texFile.'.pdf';
+            $svgFile = $texFile.'.svg';
+
+            // Записываем LaTeX код в файл
+            file_put_contents($texFile.'.tex', sprintf($texTemplate, $latex));
+
+            // Компиляция LaTeX в PDF
+            $command = new Command(sprintf('/usr/bin/pdflatex -output-directory=%s %s', escapeshellarg($tmpDir), escapeshellarg($texFile.'.tex')));
+            if (!$command->execute()) {
+                return null;
+            }
+
+            // Конвертация PDF в SVG
+            $command = new Command(sprintf('/usr/bin/pdf2svg %s %s', escapeshellarg($pdfFile), escapeshellarg($svgFile)));
+            if (!$command->execute()) {
+                return null;
+            }
+
+            // Читаем результат SVG
+            $svg = file_exists($svgFile) ? file_get_contents($svgFile) : null;
+
+            return $svg;
+        } finally {
+            $files = [
+                $texFile,
+                $texFile.'.log',
+                $texFile.'.tex',
+                $texFile.'.aux',
+                $pdfFile,
+                $svgFile,
+            ];
+
+            // Удаляем временные файлы
+            foreach ($files as $file) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        }
     }
 }
