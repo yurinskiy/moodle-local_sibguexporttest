@@ -21,3 +21,8 @@ sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
 sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
 wkhtmltopdf --version
 ```
+
+## Для поддержки вопросов LaTeX
+```shell
+sudo apt install texlive texlive-latex-extra texlive-fonts-recommended pdf2svg
+```
