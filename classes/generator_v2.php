@@ -155,6 +155,8 @@ CSS;
                 $imageType = 'jpeg';
             } elseif ($mimeType === 'image/png') {
                 $imageType = 'png';
+            } elseif ($mimeType === 'image/svg') {
+                $imageType = 'svg';
             } // Add more image types here if needed
 
             if (!empty($imageType)) {
@@ -466,6 +468,7 @@ HTML;
         }
 
         $this->rawcontent = implode('', $contents);
+        echo $this->rawcontent;die;
 
         if ($this->debug) {
             $pdf->addPage($this->get_font_size_page());

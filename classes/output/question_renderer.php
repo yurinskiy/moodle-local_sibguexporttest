@@ -472,13 +472,10 @@ class question_renderer extends \core_question_renderer {
 
         $index = 0;
         /** @var \simple_html_dom_node|null $node */
-        while ($node = $html->find('.filter_mathjaxloader_equation', $index)) {
+        while ($node = $html->find('.MathJax_Preview', $index)) {
             /** @var \simple_html_dom_node|null $input */
-            foreach ($node->find('.nolink') as $input) {
-                $svg = $this->latexToSvg($input->innertext());
-                if ($svg) {
-                    $input->innertext = sprintf('<img src="data:image/svg+xml;base64,%s" alt="%s" />', base64_encode($svg), $input->innertext());
-                }
+            foreach ($node->find('.texrender') as $input) {
+                $input->setAttribute('src', 'https://tex.jacob.workers.dev/?tex='.$input->getAttribute('alt'));
             }
 
             $index++;
